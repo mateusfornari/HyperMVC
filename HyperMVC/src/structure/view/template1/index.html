@@ -1,0 +1,82 @@
+<h2 style="color: #0C0;">Teste de página</h2>
+<p>Isso é um teste de página do novo template.</p>
+<div data-h-content="#{Teste->nome}"></div>
+<input type="text" value="#{Teste->ola()}"/>
+<table data-h-source="#{Teste->getDataArray()}">
+	<tr>
+		<th>Nome</th>
+		<th>Lista</th>
+	</tr>
+	<tr data-h-item="item">
+		<td data-h-content="#{item[nome]}"></td>
+		<td>
+			<table data-h-source="#{item[lista]}">
+				<tr>
+					<th>Nome</th>
+					<th>Item</th>
+				</tr>
+				<tr data-h-item="litem">
+					<td data-h-content="#{litem[nome]}"></td>
+					<td data-h-content="#{item[nome]}"></td>
+					
+				</tr>
+			</table>
+				
+		</td>
+	</tr>
+</table>
+
+<table data-h-source="#{Teste->getData()}">
+	<tr>
+		<th>Nome</th>
+		<th>Lista</th>
+	</tr>
+	<tr data-h-item="item">
+		<td data-h-content="#{item->nome}"></td>
+		<td>
+			<table data-h-source="#{item->getData()}">
+				<tr>
+					<th>Nome</th>
+					<th>Item</th>
+				</tr>
+				<tr data-h-item="litem">
+					<td data-h-content="#{litem->nome}"></td>
+					<td data-h-content="#{item->nome}"></td>
+					
+				</tr>
+			</table>
+				
+		</td>
+	</tr>
+</table>
+
+
+<table data-h-source="#{Teste->getData()}">
+	<tr>
+		<th>Nome</th>
+		<th>Lista</th>
+	</tr>
+	<tr data-h-item="item">
+		<td data-h-content="#{item->nome}"></td>
+		<td>
+			<table data-h-source="#{item->getDataArray()}">
+				<tr>
+					<th>Nome</th>
+					<th>Item</th>
+				</tr>
+				<tr data-h-item="litem">
+					<td data-h-content="#{litem[nome]}"></td>
+					<td data-h-content="#{item->nome}"></td>
+					
+				</tr>
+			</table>
+				
+		</td>
+	</tr>
+</table>
+
+<p data-h-content="#{Teste->nome}"></p>
+<form method="post" data-h-render="#{Teste->mostraForm}">
+	<input type="text" name="teste"/>
+	<input type="submit" name="Save" value="save"/>
+</form>
