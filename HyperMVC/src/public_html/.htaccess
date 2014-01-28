@@ -1,6 +1,6 @@
 RewriteEngine On
 
-RewriteRule ^([a-z0-9\-_\/]+)(\.html)?$ index.php?viewName=$1 [QSA]
+RewriteRule ^([a-z\-\/]+)?(\.html)?$ index.php?hmvcQuery=$1 [QSA,L]
 
 <IfModule mod_deflate.c>
  # A regra abaixo compacta arquivos do tipo html, text, css e javascript

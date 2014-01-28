@@ -43,6 +43,8 @@ class HyperMVC {
 	private static $controllerRoot = '';
 	
 	private static $noExecute = false;
+	
+	protected static $urlCustomVars = array();
 
 	/**
 	 * @var HyperMVCController
@@ -70,11 +72,34 @@ class HyperMVC {
 	 */
 	public static function render($printOutput = true) {
 		
+		$viewRoot = self::$includePath . 'view/' . self::$viewRoot.'/';
+		if(isset($_GET['hmvcQuery'])){
+			$query = $_GET['hmvcQuery'];
+			if($query != ''){
+				while(true){
+					if(file_exists($viewRoot.$query) || file_exists($viewRoot.$query.'.html')){
+						break;
+					}else{
+						$pos = strpos($query, '/');
+						if($pos === false){
+							self::$urlCustomVars[] = $query;
+							$query = '';
+							break;
+						}else{
+							self::$urlCustomVars[] = substr($query, 0, $pos);
+							$query = substr($query, $pos + 1);
+						}
+					}
+				}
+				if(is_dir($viewRoot.$query))
+					$query .= substr($query, -1) == '/' ? 'index' : '/index';
+			}else{
+				$query = 'index';
+			}
+			
+			self::$viewName = $query;
+		}
 		
-		
-		self::$viewName = isset($_GET['viewName']) ? $_GET['viewName'] : 'index';
-		if (is_dir(self::$includePath . 'view/' . self::$viewRoot . '/' . self::$viewName))
-			self::$viewName .= '/index';
 		self::initDomDocument();
 		self::findContentTag();
 		self::insertViewInTemplate();
@@ -479,6 +504,10 @@ class HyperMVC {
 	public static function setNoExecute($noExecute) {
 		self::$noExecute = $noExecute;
 	}
+	public static function getUrlCustomVars() {
+		return self::$urlCustomVars;
+	}
+
 
 
 }
