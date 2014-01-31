@@ -76,28 +76,27 @@ class HyperMVC {
 		if(isset($_GET['hmvcQuery'])){
 			$query = $_GET['hmvcQuery'];
 			if($query != ''){
-				while(true){
-					if(file_exists($viewRoot.$query) || file_exists($viewRoot.$query.'.html')){
+				$qryParts = explode('/', $query);
+				$qry = '';
+				for($i = 0; $i < count($qryParts); $i++){
+					$qry .= $qry == '' ? $qryParts[$i] : '/'.$qryParts[$i];
+					if(!file_exists($viewRoot.$qry) && !file_exists($viewRoot.$qry.'.html')){
+						$qry = '';
+						self::$urlCustomVars[] = $qryParts[$i];
+						//break;
+					}
+					if(file_exists($viewRoot.$qry.'.html')){
+						array_merge(self::$urlCustomVars, array_slice($qryParts, $i + 1));
 						break;
-					}else{
-						$pos = strpos($query, '/');
-						if($pos === false){
-							self::$urlCustomVars[] = $query;
-							$query = '';
-							break;
-						}else{
-							self::$urlCustomVars[] = substr($query, 0, $pos);
-							$query = substr($query, $pos + 1);
-						}
 					}
 				}
-				if(is_dir($viewRoot.$query))
-					$query .= substr($query, -1) == '/' ? 'index' : '/index';
+				if(is_dir($viewRoot.$qry))
+					$qry .= substr($query, -1) == '/' ? 'index' : '/index';
 			}else{
-				$query = 'index';
+				$qry = 'index';
 			}
 			
-			self::$viewName = $query;
+			self::$viewName = $qry;
 		}
 		
 		self::initDomDocument();
@@ -523,4 +522,3 @@ abstract class HyperMVCController {
 	abstract public function onFinish();
 }
 ?>
-
