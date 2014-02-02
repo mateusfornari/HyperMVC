@@ -8,5 +8,4 @@ HyperMVC::setIncludePath(INCLUDE_PATH);
 HyperMVC::setViewRoot('template1');
 HyperMVC::setControllerRoot('template1');
 HyperMVC::render();
-
 ?>

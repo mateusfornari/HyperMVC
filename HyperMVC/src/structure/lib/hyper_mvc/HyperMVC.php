@@ -42,14 +42,24 @@ class HyperMVC {
 	 */
 	private static $controllerRoot = '';
 	
+	/**
+	 * @var boolean
+	 */
 	private static $noExecute = false;
 	
-	protected static $urlCustomVars = array();
+	/**
+	 * @var array
+	 */
+	protected static $urlParts = array();
 
 	/**
 	 * @var HyperMVCController
 	 */
 	protected static $controller;
+	
+	/**
+	 * @var array
+	 */
 	private static $elementsToRemove = array();
 
 	const DATA_H_CONTENT = 'data-h-content';
@@ -76,17 +86,16 @@ class HyperMVC {
 		if(isset($_GET['hmvcQuery'])){
 			$query = $_GET['hmvcQuery'];
 			if($query != ''){
+				$query = substr($query, -1) == '/' ? substr($query, 0, -1) : $query;
 				$qryParts = explode('/', $query);
+				self::$urlParts = $qryParts;
 				$qry = '';
 				for($i = 0; $i < count($qryParts); $i++){
 					$qry .= $qry == '' ? $qryParts[$i] : '/'.$qryParts[$i];
 					if(!file_exists($viewRoot.$qry) && !file_exists($viewRoot.$qry.'.html')){
 						$qry = '';
-						self::$urlCustomVars[] = $qryParts[$i];
-						//break;
 					}
 					if(file_exists($viewRoot.$qry.'.html')){
-						array_merge(self::$urlCustomVars, array_slice($qryParts, $i + 1));
 						break;
 					}
 				}
@@ -503,8 +512,8 @@ class HyperMVC {
 	public static function setNoExecute($noExecute) {
 		self::$noExecute = $noExecute;
 	}
-	public static function getUrlCustomVars() {
-		return self::$urlCustomVars;
+	public static function getUrlParts() {
+		return self::$urlParts;
 	}
 
 
