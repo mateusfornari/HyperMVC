@@ -1,24 +1,27 @@
 <h2 style="color: #0C0;">Teste de página</h2>
 <a href="?foo=bar&bar=foo">Teste</a>
 <p>Isso é um teste de página do novo template.</p>
-<div data-h-content="#{Teste->nome}"></div>
-<input type="text" value="#{Teste->ola()}"/>
-<table data-h-source="#{Teste->getDataArray()}">
+<div>#{t->nome}</div>
+<form method="post">
+	<input type="text" value="#{t->ola()}" data-h-render="#{t->mostraForm}"/>
+	<input type="submit"/>
+</form>
+<table data-h-source="#{t->getDataArray()}">
 	<tr>
 		<th>Nome</th>
 		<th>Lista</th>
 	</tr>
 	<tr data-h-item="item">
-		<td data-h-content="#{item[nome]}"></td>
-		<td>
-			<table data-h-source="#{item[lista]}">
+		<td>#{item[nome]}</td>
+		<td data-h-source="#{item[lista]}">
+			<table data-h-item="litem">
 				<tr>
 					<th>Nome</th>
 					<th>Item</th>
 				</tr>
-				<tr data-h-item="litem">
-					<td data-h-content="#{litem[nome]}"></td>
-					<td data-h-content="#{item[nome]}"></td>
+				<tr>
+					<td>#{litem[nome]}</td>
+					<td>#{item[nome]}</td>
 					
 				</tr>
 			</table>
@@ -27,13 +30,13 @@
 	</tr>
 </table>
 
-<table data-h-source="#{Teste->getData()}">
+<table data-h-source="#{t->getData()}">
 	<tr>
 		<th>Nome</th>
 		<th>Lista</th>
 	</tr>
 	<tr data-h-item="item">
-		<td data-h-content="#{item->nome}"></td>
+		<td>#{item->nome}</td>
 		<td>
 			<table data-h-source="#{item->getData()}">
 				<tr>
@@ -41,8 +44,8 @@
 					<th>Item</th>
 				</tr>
 				<tr data-h-item="litem">
-					<td data-h-content="#{litem->nome}"></td>
-					<td data-h-content="#{item->nome}"></td>
+					<td>#{litem->nome}</td>
+					<td>#{item->nome}</td>
 					
 				</tr>
 			</table>
@@ -52,13 +55,13 @@
 </table>
 
 
-<table data-h-source="#{Teste->getData()}">
+<table data-h-source="#{t->getData()}">
 	<tr>
 		<th>Nome</th>
 		<th>Lista</th>
 	</tr>
 	<tr data-h-item="item">
-		<td data-h-content="#{item->nome}"></td>
+		<td>#{item->nome}</td>
 		<td>
 			<table data-h-source="#{item->getDataArray()}">
 				<tr>
@@ -66,8 +69,8 @@
 					<th>Item</th>
 				</tr>
 				<tr data-h-item="litem">
-					<td data-h-content="#{litem[nome]}"></td>
-					<td data-h-content="#{item->nome}"></td>
+					<td>#{litem[nome]}</td>
+					<td>#{item->nome} #{item->nome} #{item}</td>
 					
 				</tr>
 			</table>
@@ -76,8 +79,8 @@
 	</tr>
 </table>
 
-<p data-h-content="#{Teste->nome}"></p>
-<form method="post" data-h-render="#{Teste->mostraForm}">
+<p>#{t->nome}</p>
+<form method="post" data-h-render="#{t->mostraForm}">
 	<input type="text" name="teste"/>
 	<input type="submit" name="Save" value="save"/>
 </form>

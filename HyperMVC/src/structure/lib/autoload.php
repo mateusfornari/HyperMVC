@@ -1,11 +1,11 @@
 <?php
 
 function __autoload($name){
-	$lib = findDir(INCLUDE_PATH.'lib/', $name);
+	$lib = findDir(__DIR__.'/', $name);
 	if(!is_null($lib)){
 		require_once $lib.$name.'.php';
 	}else{
-		$model = findDir(INCLUDE_PATH.'model/', $name);
+		$model = findDir(__DIR__.'/../model/', $name);
 		if(!is_null($model)){
 			require_once $model.$name.'.php';
 		}

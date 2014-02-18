@@ -2,13 +2,18 @@
 class Teste extends HyperMVCController{
 	public $nome;
 	
-	public $mostraForm = false;
+	public $mostraForm = true;
 	
 	public function __construct($nome = 'Olá mundo!') {
 		$this->nome = $nome;
+        $this->viewName = 'Teste';
+        $this->objectName = 't';
 	}
 
 	public function ola(){
+		return 'ola';
+	}
+	public function olaMundo(){
 		return 'ola';
 	}
 	
@@ -32,23 +37,16 @@ class Teste extends HyperMVCController{
 		$lista[2]['lista'][2]['nome'] = 'ghi';
 		return $lista;
 	}
-	
-	public function onStart() {
-		echo 'start';
-	}
-	
-	public function onGetRequest() {
-		var_dump($_GET);
-	}
-	
-	public function onPostRequest() {
-		var_dump($_POST);
-	}
-	
-	public function onFinish() {
-		
-	}
+
+    public function index() {
+        echo "Olá index mothod!";
+        echo $_SERVER['REQUEST_METHOD'];
+        var_dump($_GET);
+    }
+
+    public function __toString() {
+        return $this->nome;
+    }
 }
 
-HyperMVC::setControllerName('Teste');
 ?>

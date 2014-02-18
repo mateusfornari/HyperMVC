@@ -1,11 +1,11 @@
 <?php
 
-define('INCLUDE_PATH', '../structure/');
+include __DIR__.'/../structure/lib/autoload.php';
 
-include INCLUDE_PATH.'lib/autoload.php';
+HyperMVC::addRoute(':estado/:cidade/:controller');
+HyperMVC::addRoute(':estado/:cidade/:controller/:action');
 
-HyperMVC::setIncludePath(INCLUDE_PATH);
 HyperMVC::setViewRoot('template1');
-HyperMVC::setControllerRoot('template1');
+//HyperMVC::setNoExecute(true);
 HyperMVC::render();
 ?>
