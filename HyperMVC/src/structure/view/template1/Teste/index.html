@@ -1,9 +1,9 @@
-<h2 style="color: #0C0;">Teste de página</h2>
+<h2 style="color: #0C0;">Teste de página <?php echo 'Olá PHP';?></h2>
 <a href="?foo=bar&bar=foo">Teste</a>
 <p>Isso é um teste de página do novo template.</p>
 <div>#{t->nome}</div>
 <form method="post">
-	<input type="text" value="#{t->ola()}" data-h-render="#{t->mostraForm}"/>
+	<input type="text" value="#{t->ola()}" data-h-render="#{t->mostraForm}" data-h-disabled="#{t->mostraForm}"/>
 	<input type="submit"/>
 </form>
 <table data-h-source="#{t->getDataArray()}">
@@ -11,9 +11,9 @@
 		<th>Nome</th>
 		<th>Lista</th>
 	</tr>
-	<tr data-h-item="item">
+	<tr data-h-item="item" data-h-source="#{item[lista]}">
 		<td>#{item[nome]}</td>
-		<td data-h-source="#{item[lista]}">
+		<td>
 			<table data-h-item="litem">
 				<tr>
 					<th>Nome</th>
@@ -80,7 +80,11 @@
 </table>
 
 <p>#{t->nome}</p>
-<form method="post" data-h-render="#{t->mostraForm}">
+<form method="post" data-h-render="#{t->mostraForm}" name="teste" action="/framework/sc/garopaba/teste">
 	<input type="text" name="teste"/>
 	<input type="submit" name="Save" value="save"/>
 </form>
+
+<div data-h-component="#{TesteComponent}">
+	
+</div>

@@ -6,7 +6,7 @@ class Teste extends HyperMVCController{
 	
 	public function __construct($nome = 'Olá mundo!') {
 		$this->nome = $nome;
-        $this->viewName = 'Teste';
+        $this->viewName = 'template1/Teste';
         $this->objectName = 't';
 	}
 
@@ -46,6 +46,22 @@ class Teste extends HyperMVCController{
 
     public function __toString() {
         return $this->nome;
+    }
+    
+    public function beforeAction() {
+        echo __METHOD__;
+    }
+    
+    public function beforeRender() {
+        echo __METHOD__;
+    }
+    
+    public function afterAction() {
+        echo __METHOD__;
+    }
+    
+    public function afterRender() {
+        echo __METHOD__;
     }
 }
 

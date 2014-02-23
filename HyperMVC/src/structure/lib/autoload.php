@@ -8,7 +8,12 @@ function __autoload($name){
 		$model = findDir(__DIR__.'/../model/', $name);
 		if(!is_null($model)){
 			require_once $model.$name.'.php';
-		}
+		}else{
+            $vendor = findDir(__DIR__.'/../vendors/', $name);
+            if(!is_null($vendor)){
+                require_once $vendor.$name.'.php';
+            }
+        }
 	}
 }
 

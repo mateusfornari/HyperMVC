@@ -5,27 +5,27 @@ class HyperMVC {
     /**
      * @var string 
      */
-    protected static $viewName;
+    protected $viewName;
 
     /**
      * @var string 
      */
-    protected static $includePath;
+    protected $includePath;
 
     /**
      * @var DOMDocument 
      */
-    protected static $domDocument = null;
+    protected $domDocument = null;
 
     /**
      * @var DOMElement 
      */
-    protected static $contentTag;
+    protected $contentTag;
 
     /**
      * @var DOMDocument 
      */
-    protected static $viewElement;
+    protected $viewElement;
 
     /**
      * @var array|HyperMVCRoute 
@@ -35,28 +35,40 @@ class HyperMVC {
     /**
      * @var string
      */
-    private static $controllerName = 'HyperMVCController';
+    private $controllerName = null;
 
     /**
      * @var string
      */
-    private static $viewRoot = '';
+    private $viewRoot = '';
 
     /**
      * @var boolean
      */
-    private static $noExecute = false;
+    private $noExecute = false;
 
     
     /**
      * @var HyperMVCController
      */
-    protected static $controller;
+    protected $controller;
 
     /**
      * @var array
      */
-    private static $elementsToRemove = array();
+    private $elementsToRemove = array();
+    
+    /**
+     * @var string 
+     */
+    protected $output = '';
+
+
+    /**
+     *
+     * @var HyperMVC
+     */
+    private static $instance = null;
 
     const DATA_H_CONTENT = 'data-h-content';
     const DATA_H_ITEM = 'data-h-item';
@@ -64,8 +76,12 @@ class HyperMVC {
     const DATA_H_RENDER = 'data-h-render';
     const DATA_H_VIEW = 'data-h-view';
     const DATA_H_COMPONENT = 'data-h-component';
+    const DATA_H_CHECKED = 'data-h-checked';
+    const DATA_H_DISABLED = 'data-h-disabled';
+    const DATA_H_SELECTED = 'data-h-selected';
+    const DATA_H_REQUIRED = 'data-h-required';
 
-    protected static $attributes = array(self::DATA_H_CONTENT, self::DATA_H_ITEM, self::DATA_H_SOURCE, self::DATA_H_RENDER, self::DATA_H_VIEW, self::DATA_H_COMPONENT);
+    protected $attributes = array(self::DATA_H_CONTENT, self::DATA_H_ITEM, self::DATA_H_SOURCE, self::DATA_H_RENDER, self::DATA_H_VIEW, self::DATA_H_COMPONENT, self::DATA_H_CHECKED, self::DATA_H_DISABLED, self::DATA_H_SELECTED, self::DATA_H_REQUIRED);
 
     private function __construct() {
         
@@ -76,14 +92,28 @@ class HyperMVC {
      * @param boolean $printOutput 
      * @return string The result HTML.
      */
-    public static function render($printOutput = true) {
-
-        if (is_null(self::$includePath)) {
-            self::$includePath = str_replace('lib/hyper_mvc', '', __DIR__);
+    public static function render($printOutput = true){
+        self::$instance = new HyperMVC();
+        self::$instance->process($printOutput);
+    }
+    
+    /**
+     * 
+     * @param boolean $printOutput 
+     * @return string The result HTML.
+     */
+    private function process($printOutput = true) {
+        
+        if (is_null($this->includePath)) {
+            $this->includePath = str_replace('lib/hyper_mvc', '', __DIR__);
         }
 
-        $query = $_GET['hmvcQuery'];
-        unset($_GET['hmvcQuery']);
+        if(isset($_GET['hmvcQuery'])){
+            $query = $_GET['hmvcQuery'];
+            unset($_GET['hmvcQuery']);
+        }else{
+            $query = null;
+        }
         $vars = null;
         foreach (self::$routes as $r) {
             $r->setQuery($query);
@@ -93,24 +123,36 @@ class HyperMVC {
             }
         }
 
-        self::$controllerName = isset($vars[':controller']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':controller']) : 'HyperMVCController';
-
-        $controllerFile = self::getControllerFile();
-
+        if(is_null($this->controllerName)){
+            $this->controllerName = isset($vars[':controller']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':controller']) : 'HyperMVCController';
+        }
+        $controllerFile = $this->getControllerFile();
+        
         if (!is_null($controllerFile)) {
+            ob_start();
             require_once $controllerFile;
-            self::$controller = new self::$controllerName;
+            $this->controller = new $this->controllerName;
+            $this->output .= ob_get_clean();
         } else {
-            throw new Exception('Controller (' . self::$controllerName . ') not found!');
+            throw new Exception('Controller (' . $this->controllerName . ') not found!');
         }
 
-        if (is_null(self::$controller->getViewName())) {
-            $viewName = self::$controllerName;
+        ob_start();
+        $this->controller->beforeAction();
+        $this->output .= ob_get_clean();
+        
+        if (is_null($this->controller->getViewName())) {
+            $viewName = $this->controllerName;
         } else {
-            $viewName = self::$controller->getViewName();
+            $viewName = $this->controller->getViewName();
         }
-
-        $viewDir = self::$includePath . '/view/' . (self::$viewRoot != '' ? self::$viewRoot . '/' : '') . $viewName . '/';
+        
+        $viewNameParts = explode('/', $viewName);
+        if(count($viewNameParts) > 0){
+            $this->viewRoot = $viewNameParts[0];
+        }
+        
+        $viewDir = $this->includePath . 'view/'. $viewName . '/';
 
         if (isset($vars[':action'])) {
             $action = preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':action']);
@@ -118,83 +160,105 @@ class HyperMVC {
             $action = 'index';
         }
 
-        self::$viewName = $viewDir . $action . '.html';
+        $this->viewName = $viewDir . $action . '.html';
+        
+        ob_start();
+        $this->controller->$action();
+        
+        $this->controller->afterAction();
+        
+        $this->controller->beforeRender();
+        $this->output .= ob_get_clean();
 
-        self::$controller->$action();
+        $this->initDomDocument();
+        $this->findContentTag();
+        $this->insertViewInTemplate();
+        if (!$this->noExecute)
+            $this->execute();
 
-        self::initDomDocument();
-        self::findContentTag();
-        self::insertViewInTemplate();
-        if (!self::$noExecute)
-            self::execute();
-
-        foreach (self::$elementsToRemove as $e) {
+        foreach ($this->elementsToRemove as $e) {
             $e->parentNode->removeChild($e);
         }
 
-        $output = str_replace('%amp%', '&', self::$domDocument->saveHTML());
+        $this->output .= str_replace('%amp%', '&', $this->domDocument->saveHTML());
+        
+        ob_start();
+        $this->controller->afterRender();
+        $this->output .= ob_get_clean();
+        
         if ($printOutput)
-            echo $output;
-        return $output;
+            echo $this->output;
+        
+        return $this->output;
     }
 
-    protected static function initDomDocument() {
+    protected function initDomDocument() {
 
-        if (is_null(self::$controller->getTemplateName())) {
+        if (is_null($this->controller->getTemplateName())) {
             $templateName = 'template';
         } else {
-            $templateName = self::$controller->getTemplateName();
+            $templateName = $this->controller->getTemplateName();
         }
 
-        $templateFile = self::$includePath . '/view/' . (self::$viewRoot != '' ? self::$viewRoot . '/' : '') . $templateName . '.html';
+        $templateFile = $this->includePath . 'view/' . ($this->viewRoot != '' ? $this->viewRoot . '/' : '') . $templateName . '.html';
 
         if (file_exists($templateFile)) {
-            self::$domDocument = new DOMDocument();
-            self::$domDocument->loadHTML(str_replace('&', '%amp%', file_get_contents($templateFile)));
+            $this->domDocument = new DOMDocument();
+            
+            ob_start();
+            include $templateFile;
+            $templateString = ob_get_clean();
+            
+            $this->domDocument->loadHTML(str_replace('&', '%amp%', $templateString));
         } else {
-            self::$domDocument = null;
+            $this->domDocument = null;
         }
     }
 
-    protected static function findContentTag() {
-        if (!is_null(self::$domDocument)) {
-            $body = self::$domDocument->getElementsByTagName('body');
+    protected function findContentTag() {
+        if (!is_null($this->domDocument)) {
+            $body = $this->domDocument->getElementsByTagName('body');
             $e = $body->item(0);
-            self::$contentTag = self::getElementByAttribute($e, self::DATA_H_VIEW);
+            $this->contentTag = $this->getElementByAttribute($e, self::DATA_H_VIEW);
         }
     }
 
-    protected static function insertViewInTemplate() {
-        if (file_exists(self::$viewName)) {
-            if (!is_null(self::$domDocument)) {
-                self::$viewElement = new DOMDocument();
-                self::$viewElement->loadHTML('<html><meta charset="UTF-8">' . str_replace('&', '%amp%', file_get_contents(self::$viewName)) . '</html>');
-
-                $children = self::$viewElement->getElementsByTagName('body')->item(0)->childNodes;
+    protected function insertViewInTemplate() {
+        if (file_exists($this->viewName)) {
+            
+            ob_start();
+            include $this->viewName;
+            $viewString = ob_get_clean();
+            
+            if (!is_null($this->domDocument)) {
+                $this->viewElement = new DOMDocument();
+                $this->viewElement->loadHTML('<html><meta charset="UTF-8">' . str_replace('&', '%amp%', $viewString) . '</html>');
+                $children = $this->viewElement->getElementsByTagName('body')->item(0)->childNodes;
 
                 foreach ($children as $c) {
 
-                    $c = self::$domDocument->importNode($c, true);
-                    self::$contentTag->appendChild($c);
+                    $c = $this->domDocument->importNode($c, true);
+                    $this->contentTag->appendChild($c);
                 }
-                self::$contentTag->removeAttribute(self::DATA_H_VIEW);
+                $this->contentTag->removeAttribute(self::DATA_H_VIEW);
             } else {
-                self::$domDocument = new DOMDocument();
-                self::$domDocument->loadHTML(str_replace('&', '%amp%', file_get_contents(self::$viewName)));
+                $this->domDocument = new DOMDocument();
+                $this->domDocument->loadHTML(str_replace('&', '%amp%', $viewString));
             }
         } else {
-            throw new Exception('View file (' . self::$viewName . ') not found!');
+            throw new Exception('View file (' . $this->viewName . ') not found!');
         }
     }
 
-    private static function getControllerFile() {
-        $dir = self::$includePath . '/controller/';
-        if (file_exists($dir . self::$controllerName . '.php')) {
-            return $dir . self::$controllerName . '.php';
+    private function getControllerFile() {
+        $dir = $this->includePath . 'controller/';
+        
+        if (file_exists($dir . $this->controllerName . '.php')) {
+            return $dir . $this->controllerName . '.php';
         }
         $files = glob($dir . '*');
 
-        $contrllerLower = strtolower($dir . self::$controllerName . '.php');
+        $contrllerLower = strtolower($dir . $this->controllerName . '.php');
         $contrllerNoSpace = preg_replace('/[\-_]/', '', $contrllerLower);
         $contrllerUnder = preg_replace('/[\-]/', '_', $contrllerLower);
         $contrllerNoSpaceUnder = preg_replace('/[\-]/', '', $contrllerLower);
@@ -215,53 +279,94 @@ class HyperMVC {
      * @param type $result
      * @return DOMElement
      */
-    protected static function getElementByAttribute($element, $attribute, $value = null, $result = null) {
+    protected function getElementByAttribute($element, $attribute, $value = null, $result = null) {
         foreach ($element->childNodes as $c) {
             if ($c instanceof DOMElement) {
                 if ($c->hasAttribute($attribute) && (is_null($value) || $c->getAttribute($attribute) == $value)) {
                     return $c;
                 } else {
-                    $result = self::getElementByAttribute($c, $attribute, $value, $result);
+                    $result = $this->getElementByAttribute($c, $attribute, $value, $result);
                 }
             }
         }
         return $result;
     }
 
-    protected static function execute() {
+    protected function execute() {
 
-        self::treatElements(self::$domDocument->documentElement);
+        $this->treatElements($this->domDocument->documentElement);
     }
 
-    private static function processValue($attribute, $element, $attributeValue, $obj = null, $objName = null) {
-
-        if (!in_array($attribute->name, self::$attributes) || $attribute->name == self::DATA_H_CONTENT) {
-            $value = self::getValue($attributeValue, $obj, $objName);
+    private function processValue($attribute, $element, $attributeValue, $obj = null, $objName = null) {
+        
+        if (!in_array($attribute->name, $this->attributes) || $attribute->name == self::DATA_H_CONTENT) {
+            $value = $this->getValue($attributeValue, $obj, $objName);
             $pos = strpos($attribute->value, $attributeValue);
             $len = strlen($attributeValue);
             $val = substr($attribute->value, 0, $pos) . $value . substr($attribute->value, $pos + $len);
             $attribute->value = $val;
         } else {
             if ($attribute->name == self::DATA_H_SOURCE) {
-                self::treatDataSource($element, $attribute, $obj, $objName);
-            } else if ($attribute->name == self::DATA_H_RENDER) {
-                $value = self::getValue($attributeValue, $obj, $objName);
+                $this->treatDataSource($element, $attribute, $obj, $objName);
+            } elseif ($attribute->name == self::DATA_H_RENDER) {
+                $value = $this->getValue($attributeValue, $obj, $objName);
                 if (!$value) {
-                    self::$elementsToRemove[] = $element;
+                    $this->elementsToRemove[] = $element;
                 }
+            } elseif ($attribute->name == self::DATA_H_COMPONENT) {
+                
+                $component = new HyperMVC();
+                $component->controllerName = preg_replace('/[#{}]/', '', $attribute->value);
+                $component->includePath = str_replace('lib/hyper_mvc', '', __DIR__).'component/';
+                $result = $component->process(false);
+                $domComponent = new DOMDocument();
+                $domComponent->loadHTML($result);
+                
+                $children = $domComponent->getElementsByTagName('body')->item(0)->childNodes;
+
+                foreach ($children as $c) {
+                    $c = self::$instance->domDocument->importNode($c, true);
+                    $element->appendChild($c);
+                }
+                
+                $element->removeAttribute(self::DATA_H_COMPONENT);
+            } elseif ($attribute->name == self::DATA_H_CHECKED) {
+                $value = $this->getValue($attributeValue, $obj, $objName);
+                if ($value) {
+                    $element->setAttribute('checked', 'checked');
+                }#{t->mostraForm}
+                $element->removeAttribute(self::DATA_H_CHECKED);
+            } elseif ($attribute->name == self::DATA_H_DISABLED) {
+                $value = $this->getValue($attributeValue, $obj, $objName);
+                if ($value) {
+                    $element->setAttribute('disabled', 'disabled');
+                }
+                $element->removeAttribute(self::DATA_H_DISABLED);
+            } elseif ($attribute->name == self::DATA_H_SELECTED) {
+                $value = $this->getValue($attributeValue, $obj, $objName);
+                if ($value) {
+                    $element->setAttribute('selected', 'selected');
+                }
+                $element->removeAttribute(self::DATA_H_SELECTED);
+            } elseif ($attribute->name == self::DATA_H_REQUIRED) {
+                $value = $this->getValue($attributeValue, $obj, $objName);
+                if ($value) {
+                    $element->setAttribute('required', 'required');
+                }
+                $element->removeAttribute(self::DATA_H_REQUIRED);
             }
         }
     }
 
-    private static function processNodeValue($element, $nodeValue, $obj = null, $objName = null) {
-        $value = self::getValue($nodeValue, $obj, $objName);
+    private function processNodeValue($element, $nodeValue, $obj = null, $objName = null) {
+        $value = $this->getValue($nodeValue, $obj, $objName);
         $pos = strpos($element->nodeValue, $nodeValue);
         $len = strlen($nodeValue);
         $val = substr($element->nodeValue, 0, $pos) . $value . substr($element->nodeValue, $pos + $len);
         $element->nodeValue = $val;
     }
 
-    private static function getValue($attributeValue, $obj = null, $objName = null) {
+    private function getValue($attributeValue, $obj = null, $objName = null) {
 
         if (is_string($obj)) {
             return $obj;
@@ -282,7 +387,7 @@ class HyperMVC {
                     if (preg_match('/\((.+)?\)/', $part)) {
                         $part = preg_replace('/\((.+)?\)/', '', $part);
                         $value = $value::$part();
-                    } else if (preg_match('/\[(.+)?\]/', $part, $matches)) {
+                    } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
                         $index = isset($matches[1]) ? $matches[1] : '';
                         $part = preg_replace('/\[(.+)?\]/', '', $part);
                         $part = str_replace('$', '', $part);
@@ -296,10 +401,10 @@ class HyperMVC {
             } else {
                 if (!preg_match('/\[(.+)?\]/', $attrParts[0]) && !preg_match('/\(\)/', $attrParts[0])) {
                     $className = $attrParts[0];
-                    if ($className != self::$controller->getObjectName()) {
+                    if ($className != $this->controller->getObjectName()) {
                         $obj = new $className();
                     } else {
-                        $obj = self::$controller;
+                        $obj = $this->controller;
                     }
                     $value = $obj;
                 } else {
@@ -315,13 +420,13 @@ class HyperMVC {
             if ($objName != preg_replace('/\[(.+)?\]/', '', $attrParts[0])) {
                 if (!preg_match('/\[(.+)?\]/', $attrParts[0])) {
                     $className = $attrParts[0];
-                    if ($className != self::$controller->getObjectName()) {
+                    if ($className != $this->controller->getObjectName()) {
                         if (class_exists($className))
                             $obj = new $className();
                         else
                             return $obj;
                     }else {
-                        $obj = self::$controller;
+                        $obj = $this->controller;
                     }
                     $value = $obj;
                 } else {
@@ -345,7 +450,7 @@ class HyperMVC {
                 if (preg_match('/\((.+)?\)/', $part)) {
                     $part = preg_replace('/\((.+)?\)/', '', $part);
                     $value = $value->$part();
-                } else if (preg_match('/\[(.+)?\]/', $part, $matches)) {
+                } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
                     $index = isset($matches[1]) ? $matches[1] : '';
                     $part = preg_replace('/\[(.+)?\]/', '', $part);
                     $part = str_replace('$', '', $part);
@@ -360,7 +465,7 @@ class HyperMVC {
                     if (preg_match('/\((.+)?\)/', $part)) {
                         $part = preg_replace('/\((.+)?\)/', '', $part);
                         $value = $value::$part();
-                    } else if (preg_match('/\[(.+)?\]/', $part, $matches)) {
+                    } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
                         $index = isset($matches[1]) ? $matches[1] : '';
                         $part = preg_replace('/\[(.+)?\]/', '', $part);
                         $part = str_replace('$', '', $part);
@@ -376,7 +481,7 @@ class HyperMVC {
             if (preg_match('/\((.+)?\)/', $part)) {
                 $part = preg_replace('/\((.+)?\)/', '', $part);
                 $value = $value->$part();
-            } else if (preg_match('/\[(.+)?\]/', $part, $matches)) {
+            } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
                 $index = isset($matches[1]) ? $matches[1] : '';
                 $part = preg_replace('/\[(.+)?\]/', '', $part);
                 $value = $value->$part[$index];
@@ -391,7 +496,7 @@ class HyperMVC {
         if (preg_match('/\((.+)?\)/', $part)) {
             $part = preg_replace('/\((.+)?\)/', '', $part);
             $value = $value::$part();
-        } else if (preg_match('/\[(.+)?\]/', $part, $matches)) {
+        } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
             $index = isset($matches[1]) ? $matches[1] : '';
             $part = preg_replace('/\[(.+)?\]/', '', $part);
             $part = str_replace('$', '', $part);
@@ -404,7 +509,7 @@ class HyperMVC {
         return $value;
     }
 
-    protected static function treatElements($root, $obj = null, $objName = null) {
+    protected function treatElements($root, $obj = null, $objName = null) {
 
         if (is_a($root, 'DOMElement')) {
             $attributes = array();
@@ -416,14 +521,14 @@ class HyperMVC {
                             if (!is_null($obj) && !is_null($objName)) {
                                 $value = trim(preg_replace('/[#{}]/', '', $attributeValue));
                                 if (preg_match('/^' . $objName . '[-> ^[]+/', $value) || $objName == $value) {
-                                    self::processValue($a, $root, $attributeValue, $obj, $objName);
-                                    if (in_array($a->name, self::$attributes)) {
+                                    $this->processValue($a, $root, $attributeValue, $obj, $objName);
+                                    if (in_array($a->name, $this->attributes)) {
                                         $attributes[] = $a->name;
                                     }
                                 }
                             } else {
-                                self::processValue($a, $root, $attributeValue, $obj, $objName);
-                                if (in_array($a->name, self::$attributes)) {
+                                $this->processValue($a, $root, $attributeValue, $obj, $objName);
+                                if (in_array($a->name, $this->attributes)) {
                                     $attributes[] = $a->name;
                                 }
                             }
@@ -433,7 +538,7 @@ class HyperMVC {
             }
             foreach ($attributes as $a) {
                 if ($a == self::DATA_H_CONTENT) {
-                    $root->appendChild(self::$domDocument->createTextNode($root->getAttribute($a)));
+                    $root->appendChild($this->domDocument->createTextNode($root->getAttribute($a)));
                 }
                 $root->removeAttribute($a);
             }
@@ -447,25 +552,25 @@ class HyperMVC {
                             if (!is_null($obj) && !is_null($objName)) {
                                 $value = trim(preg_replace('/[#{}]/', '', $nodeValue));
                                 if (preg_match('/^' . $objName . '[-> ^[]+/', $value) || $objName == $value) {
-                                    self::processNodeValue($node, $nodeValue, $obj, $objName);
+                                    $this->processNodeValue($node, $nodeValue, $obj, $objName);
                                 }
                             } else {
-                                self::processNodeValue($node, $nodeValue, $obj, $objName);
+                                $this->processNodeValue($node, $nodeValue, $obj, $objName);
                             }
                         }
                     }
                 }
             }
             foreach ($root->childNodes as $c) {
-                self::treatElements($c, $obj, $objName);
+                $this->treatElements($c, $obj, $objName);
             }
         }
     }
 
-    protected static function treatDataSource($element, $attribute, $obj = null, $objName = null) {
-        $list = self::getValue($attribute->value, $obj, $objName);
+    protected function treatDataSource($element, $attribute, $obj = null, $objName = null) {
+        $list = $this->getValue($attribute->value, $obj, $objName);
 
-        $item = self::getElementByAttribute($element, self::DATA_H_ITEM);
+        $item = $this->getElementByAttribute($element, self::DATA_H_ITEM);
 
         $itemName = $item->getAttribute(self::DATA_H_ITEM);
 
@@ -475,7 +580,7 @@ class HyperMVC {
 
             $i = $item->cloneNode(true);
 
-            self::treatElements($i, $l, $itemName);
+            $this->treatElements($i, $l, $itemName);
 
             $item->parentNode->appendChild($i);
         }
@@ -483,36 +588,8 @@ class HyperMVC {
         $item->parentNode->removeChild($item);
     }
 
-    public static function getIncludePath() {
-        return self::$includePath;
-    }
-
-    public static function setIncludePath($includePath) {
-        self::$includePath = $includePath;
-    }
-
-    public static function getViewName() {
-        return self::$viewName;
-    }
-
-    public static function setViewName($viewName) {
-        self::$viewName = $viewName;
-    }
-
-    public static function setControllerName($controllerName) {
-        self::$controllerName = $controllerName;
-    }
-
-    public static function getViewRoot() {
-        return self::$viewRoot;
-    }
-
-    public static function setViewRoot($viewRoot) {
-        self::$viewRoot = $viewRoot;
-    }
-
     public static function setNoExecute($noExecute) {
-        self::$noExecute = $noExecute;
+        $this->noExecute = $noExecute;
     }
 
     public static function addRoute($route) {
@@ -520,128 +597,3 @@ class HyperMVC {
     }
 
 }
-
-abstract class HyperMVCController {
-
-    protected $viewName = null;
-    protected $templateName = null;
-    protected $objectName = 'controller';
-
-    abstract public function index();
-
-    public function getViewName() {
-        return $this->viewName;
-    }
-
-    public function getTemplateName() {
-        return $this->templateName;
-    }
-
-    public function setViewName($viewName) {
-        $this->viewName = $viewName;
-    }
-
-    public function setTemplateName($templateName) {
-        $this->templateName = $templateName;
-    }
-
-    public function getObjectName() {
-        return $this->objectName;
-    }
-
-    public function setObjectName($objectName) {
-        $this->objectName = $objectName;
-    }
-
-}
-
-class HyperMVCRoute {
-
-    private $route;
-    private $query;
-    private $vars = array();
-
-    function __construct($route, $query = '') {
-        if (substr($route, 0, 1) == '/') {
-            $route = substr($route, 1);
-        }
-        if (substr($route, -1) == '/') {
-            $route = substr($route, 0, -1);
-        }
-        if (substr($query, 0, 1) == '/') {
-            $query = substr($query, 1);
-        }
-        if (substr($query, -1) == '/') {
-            $query = substr($query, 0, -1);
-        }
-        $this->route = $route;
-        $this->query = $query;
-    }
-
-    public function getRoute() {
-        return $this->route;
-    }
-
-    public function setRoute($route) {
-        if (substr($route, 0, 1) == '/') {
-            $route = substr($route, 1);
-        }
-        if (substr($route, -1) == '/') {
-            $route = substr($route, 0, -1);
-        }
-        $this->route = $route;
-    }
-
-    public function getQuery() {
-        return $this->query;
-    }
-
-    public function setQuery($query) {
-        if (substr($query, 0, 1) == '/') {
-            $query = substr($query, 1);
-        }
-        if (substr($query, -1) == '/') {
-            $query = substr($query, 0, -1);
-        }
-        $this->query = $query;
-    }
-
-    public function getVars() {
-        if (count($this->vars) == 0) {
-            $vars = explode('/', $this->route);
-            $values = explode('/', $this->query);
-            for ($i = 0; $i < count($vars); $i++) {
-                if (isset($values[$i])) {
-                    $this->vars[$vars[$i]] = $values[$i];
-                } else {
-                    break;
-                }
-            }
-        }
-        return $this->vars;
-    }
-
-    public function match() {
-        $vars = explode('/', $this->route);
-        $values = explode('/', $this->query);
-        if (count($values) == count($vars)) {
-            $vars = $this->getVars();
-            foreach ($vars as $var => $val) {
-                if ($var[0] != ':' && $var != $val)
-                    return false;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    public function getVar($varName) {
-        $vars = $this->getVars();
-        if (isset($vars[$varName]))
-            return $vars[$varName];
-        return null;
-    }
-
-}
-
-?>
