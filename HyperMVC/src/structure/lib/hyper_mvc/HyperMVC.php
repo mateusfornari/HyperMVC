@@ -148,7 +148,7 @@ class HyperMVC {
         }
         
         $viewNameParts = explode('/', $viewName);
-        if(count($viewNameParts) > 0){
+        if(count($viewNameParts) > 1){
             $this->viewRoot = $viewNameParts[0];
         }
         
