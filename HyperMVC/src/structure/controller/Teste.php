@@ -7,7 +7,7 @@ class Teste extends HyperMVCController{
 	public function __construct($nome = 'Olá mundo!') {
 		$this->nome = $nome;
         $this->viewName = 'template1/Teste';
-        $this->objectName = 't';
+        
 	}
 
 	public function ola(){

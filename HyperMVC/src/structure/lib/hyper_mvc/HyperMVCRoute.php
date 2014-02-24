@@ -5,8 +5,9 @@ class HyperMVCRoute {
     private $route;
     private $query;
     private $vars = array();
+    private $config = array();
 
-    function __construct($route, $query = '') {
+    function __construct($route, $query = '', $config = array()) {
         if (substr($route, 0, 1) == '/') {
             $route = substr($route, 1);
         }
@@ -21,6 +22,7 @@ class HyperMVCRoute {
         }
         $this->route = $route;
         $this->query = $query;
+        $this->config = $config;
     }
 
     public function getRoute() {
@@ -57,7 +59,7 @@ class HyperMVCRoute {
             $values = explode('/', $this->query);
             for ($i = 0; $i < count($vars); $i++) {
                 if (isset($values[$i])) {
-                    $this->vars[$vars[$i]] = $values[$i];
+                    $this->vars[str_replace('?', '', $vars[$i])] = $values[$i];
                 } else {
                     break;
                 }
@@ -69,15 +71,21 @@ class HyperMVCRoute {
     public function match() {
         $vars = explode('/', $this->route);
         $values = explode('/', $this->query);
-        if (count($values) == count($vars)) {
-            $vars = $this->getVars();
-            foreach ($vars as $var => $val) {
-                if ($var[0] != ':' && $var != $val)
-                    return false;
+        for ($i = 0; $i < count($vars); $i++) {
+            if(!isset($values[$i]) && $vars[$i][0] != '?'){
+                return false;
             }
-            return true;
         }
-        return false;
+        $vars = $this->getVars();
+        foreach ($vars as $var => $val) {
+            if ($var[0] != ':' && $var != $val){
+                return false;
+            } elseif (key_exists($var, $this->config) && !preg_match($this->config[$var], $val)) {
+                return false;
+            }
+
+        }
+        return true;
     }
 
     public function getVar($varName) {
@@ -87,4 +95,13 @@ class HyperMVCRoute {
         return null;
     }
 
+    /**
+     * Sets the format of a var for validation.
+     * @param string $varName The var name.
+     * @param string $format Regular expression for validate the value.
+     */
+    public function setVarFormat($varName, $format){
+        $this->config[$varName] = $format;
+    }
+    
 }

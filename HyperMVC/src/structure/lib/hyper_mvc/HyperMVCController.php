@@ -3,8 +3,8 @@
 abstract class HyperMVCController {
 
     protected $viewName = null;
-    protected $templateName = null;
-    protected $objectName = 'controller';
+    protected $templateName = 'template';
+    protected $objectName = 'this';
 
     abstract public function index();
 

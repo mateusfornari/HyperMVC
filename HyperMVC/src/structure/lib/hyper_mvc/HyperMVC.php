@@ -107,7 +107,7 @@ class HyperMVC {
         if (is_null($this->includePath)) {
             $this->includePath = str_replace('lib/hyper_mvc', '', __DIR__);
         }
-
+        
         if(isset($_GET['hmvcQuery'])){
             $query = $_GET['hmvcQuery'];
             unset($_GET['hmvcQuery']);
@@ -126,6 +126,7 @@ class HyperMVC {
         if(is_null($this->controllerName)){
             $this->controllerName = isset($vars[':controller']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':controller']) : 'HyperMVCController';
         }
+        
         $controllerFile = $this->getControllerFile();
         
         if (!is_null($controllerFile)) {
@@ -134,15 +135,11 @@ class HyperMVC {
             $this->controller = new $this->controllerName;
             $this->output .= ob_get_clean();
         } else {
-            throw new Exception('Controller (' . $this->controllerName . ') not found!');
+            return $this->notFoundPage($printOutput);
         }
 
-        ob_start();
-        $this->controller->beforeAction();
-        $this->output .= ob_get_clean();
-        
         if (is_null($this->controller->getViewName())) {
-            $viewName = $this->controllerName;
+            $viewName = get_class($this->controller);
         } else {
             $viewName = $this->controller->getViewName();
         }
@@ -161,6 +158,14 @@ class HyperMVC {
         }
 
         $this->viewName = $viewDir . $action . '.html';
+        
+        if(!method_exists($this->controller, $action)){
+            return $this->notFoundPage($printOutput);
+        }
+        
+        ob_start();
+        $this->controller->beforeAction();
+        $this->output .= ob_get_clean();
         
         ob_start();
         $this->controller->$action();
@@ -192,27 +197,39 @@ class HyperMVC {
         return $this->output;
     }
 
+    protected function notFoundPage($printOutput){
+        if(file_exists($this->includePath.'controller/NotFound.php')){
+            $component = new HyperMVC();
+            $component->controllerName = 'NotFound';
+            $component->includePath = $this->includePath;
+            return $component->process($printOutput);
+        } else {
+            throw new Exception("Controller ($this->controllerName) not found!");
+        }
+    }
+    
     protected function initDomDocument() {
 
-        if (is_null($this->controller->getTemplateName())) {
-            $templateName = 'template';
-        } else {
+        if (!is_null($this->controller->getTemplateName())) {
+
             $templateName = $this->controller->getTemplateName();
+            
+            $templateFile = $this->includePath . 'view/' . ($this->viewRoot != '' ? $this->viewRoot . '/' : '') . $templateName . '.html';
+
+            if (file_exists($templateFile)) {
+                $this->domDocument = new DOMDocument();
+
+                ob_start();
+                include $templateFile;
+                $templateString = ob_get_clean();
+
+                $this->domDocument->loadHTML(str_replace('&', '%amp%', $templateString));
+            } else {
+                $this->domDocument = null;
+            }
         }
 
-        $templateFile = $this->includePath . 'view/' . ($this->viewRoot != '' ? $this->viewRoot . '/' : '') . $templateName . '.html';
-
-        if (file_exists($templateFile)) {
-            $this->domDocument = new DOMDocument();
-            
-            ob_start();
-            include $templateFile;
-            $templateString = ob_get_clean();
-            
-            $this->domDocument->loadHTML(str_replace('&', '%amp%', $templateString));
-        } else {
-            $this->domDocument = null;
-        }
+        
     }
 
     protected function findContentTag() {
@@ -246,7 +263,8 @@ class HyperMVC {
                 $this->domDocument->loadHTML(str_replace('&', '%amp%', $viewString));
             }
         } else {
-            throw new Exception('View file (' . $this->viewName . ') not found!');
+            $this->notFoundPage(true);
+            exit();
         }
     }
 
@@ -592,8 +610,16 @@ class HyperMVC {
         $this->noExecute = $noExecute;
     }
 
-    public static function addRoute($route) {
-        self::$routes[] = new HyperMVCRoute($route);
+    /**
+     * 
+     * @param string $route
+     * @param array $varsFormat
+     * @return HyperMVCRoute
+     */
+    public static function addRoute($route, $varsFormat = array()) {
+        $route = new HyperMVCRoute($route, '', $varsFormat);
+        self::$routes[] = $route;
+        return $route;
     }
 
 }

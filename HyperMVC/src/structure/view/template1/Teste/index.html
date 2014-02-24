@@ -1,12 +1,12 @@
 <h2 style="color: #0C0;">Teste de página <?php echo 'Olá PHP';?></h2>
 <a href="?foo=bar&bar=foo">Teste</a>
 <p>Isso é um teste de página do novo template.</p>
-<div>#{t->nome}</div>
+<div>#{this->nome}</div>
 <form method="post">
-	<input type="text" value="#{t->ola()}" data-h-render="#{t->mostraForm}" data-h-disabled="#{t->mostraForm}"/>
+	<input type="text" value="#{this->ola()}" data-h-render="#{this->mostraForm}" data-h-disabled="#{this->mostraForm}"/>
 	<input type="submit"/>
 </form>
-<table data-h-source="#{t->getDataArray()}">
+<table data-h-source="#{this->getDataArray()}">
 	<tr>
 		<th>Nome</th>
 		<th>Lista</th>
@@ -30,7 +30,7 @@
 	</tr>
 </table>
 
-<table data-h-source="#{t->getData()}">
+<table data-h-source="#{this->getData()}">
 	<tr>
 		<th>Nome</th>
 		<th>Lista</th>
@@ -55,7 +55,7 @@
 </table>
 
 
-<table data-h-source="#{t->getData()}">
+<table data-h-source="#{this->getData()}">
 	<tr>
 		<th>Nome</th>
 		<th>Lista</th>
@@ -79,8 +79,8 @@
 	</tr>
 </table>
 
-<p>#{t->nome}</p>
-<form method="post" data-h-render="#{t->mostraForm}" name="teste" action="/framework/sc/garopaba/teste">
+<p>#{this->nome}</p>
+<form method="post" data-h-render="#{this->mostraForm}" name="teste" action="/framework/sc/garopaba/teste">
 	<input type="text" name="teste"/>
 	<input type="submit" name="Save" value="save"/>
 </form>

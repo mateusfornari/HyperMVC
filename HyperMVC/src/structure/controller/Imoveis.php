@@ -7,7 +7,7 @@ class Imoveis extends HyperMVCController{
 	public $mostrar = true;
 	
 	function __construct() {
-		$this->objectName = 'i';
+		
 	}
 
 	
