@@ -1,6 +1,6 @@
 <?php
 
-class NotFound extends HyperMVCController{
+class NotFoundController extends BasicController{
    
     public function index() {
         $this->templateName = null;

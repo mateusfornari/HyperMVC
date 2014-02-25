@@ -5,7 +5,13 @@ abstract class HyperMVCController {
     protected $viewName = null;
     protected $templateName = 'template';
     protected $objectName = 'this';
-
+    
+    /**
+     *
+     * @var HyperMVCRequest
+     */
+    protected $request = null;
+    
     abstract public function index();
 
     public function getViewName() {
@@ -39,5 +45,19 @@ abstract class HyperMVCController {
     public function afterAction(){}
     
     public function afterRender(){}
+    
+    /**
+     * 
+     * @return HyperMVCRequest
+     */
+    public function getRequest() {
+        return $this->request;
+    }
+
+    public function setRequest(HyperMVCRequest $request) {
+        $this->request = $request;
+    }
+
+
     
 }

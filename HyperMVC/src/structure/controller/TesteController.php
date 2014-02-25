@@ -1,5 +1,5 @@
 <?php
-class Teste extends HyperMVCController{
+class TesteController extends BasicController{
 	public $nome;
 	
 	public $mostraForm = true;
@@ -18,7 +18,7 @@ class Teste extends HyperMVCController{
 	}
 	
 	public function getData(){
-		return array(new Teste('abc'), new Teste('def'), new Teste('ghi'));
+		return array(new TesteController('abc'), new TesteController('def'), new TesteController('ghi'));
 	}
 	
 	public function getDataArray(){
@@ -41,7 +41,7 @@ class Teste extends HyperMVCController{
     public function index() {
         echo "Olá index mothod!";
         echo $_SERVER['REQUEST_METHOD'];
-        var_dump($_GET);
+        var_dump($this->request->post->Save);
     }
 
     public function __toString() {

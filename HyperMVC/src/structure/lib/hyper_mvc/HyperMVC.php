@@ -124,29 +124,32 @@ class HyperMVC {
         }
 
         if(is_null($this->controllerName)){
-            $this->controllerName = isset($vars[':controller']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':controller']) : 'HyperMVCController';
+            $this->controllerName = isset($vars[':controller']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':controller']).'Controller' : 'HyperMVCController';
         }
         
         $controllerFile = $this->getControllerFile();
+        $basicControllerFile = str_replace('lib/hyper_mvc', '', __DIR__).'controller/BasicController.php';
         
-        if (!is_null($controllerFile)) {
+        if (!is_null($controllerFile) && file_exists($basicControllerFile)) {
             ob_start();
+            require_once $basicControllerFile;
             require_once $controllerFile;
             $this->controller = new $this->controllerName;
+            $this->controller->setRequest(new HyperMVCRequest());
             $this->output .= ob_get_clean();
         } else {
             return $this->notFoundPage($printOutput);
         }
 
         if (is_null($this->controller->getViewName())) {
-            $viewName = get_class($this->controller);
+            $viewName = str_replace('Controller', '', get_class($this->controller));
         } else {
             $viewName = $this->controller->getViewName();
         }
         
         $viewNameParts = explode('/', $viewName);
         if(count($viewNameParts) > 1){
-            $this->viewRoot = $viewNameParts[0];
+            $this->viewRoot = implode('/', array_slice($viewNameParts, 0, count($viewNameParts) - 1));
         }
         
         $viewDir = $this->includePath . 'view/'. $viewName . '/';
@@ -198,9 +201,9 @@ class HyperMVC {
     }
 
     protected function notFoundPage($printOutput){
-        if(file_exists($this->includePath.'controller/NotFound.php')){
+        if(file_exists($this->includePath.'controller/NotFoundController.php')){
             $component = new HyperMVC();
-            $component->controllerName = 'NotFound';
+            $component->controllerName = 'NotFoundController';
             $component->includePath = $this->includePath;
             return $component->process($printOutput);
         } else {

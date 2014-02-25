@@ -1,6 +1,6 @@
 <?php
 
-class Imoveis extends HyperMVCController{
+class ImoveisController extends BasicController{
 	
 	private $lista = array();
 	
