@@ -76,6 +76,9 @@ class HyperMVCRoute {
                 return false;
             }
         }
+		if(count($values) != count($vars)){
+			return false;
+		}
         $vars = $this->getVars();
         foreach ($vars as $var => $val) {
             if ($var[0] != ':' && $var != $val){
