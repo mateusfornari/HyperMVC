@@ -555,7 +555,14 @@ class HyperMVC {
                             }
                         }
                     }
-                }
+                }else{
+					if($a->name == 'src' || $a->name == 'href'){
+						$value = $a->value;
+						if(strpos($value, '://') === false && $value[0] != '?' && $value[0] != '#'){
+							$a->value = $this->controller->getRequest()->baseUrl().$value;
+						}
+					}
+				}
             }
             foreach ($attributes as $a) {
                 if ($a == self::DATA_H_CONTENT) {
