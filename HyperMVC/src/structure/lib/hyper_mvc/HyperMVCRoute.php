@@ -76,7 +76,7 @@ class HyperMVCRoute {
                 return false;
             }
         }
-		if(count($values) != count($vars)){
+		if(count($values) > count($vars)){
 			return false;
 		}
         $vars = $this->getVars();
