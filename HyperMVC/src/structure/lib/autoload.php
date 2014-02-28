@@ -1,20 +1,23 @@
 <?php
 
 function __autoload($name){
+    $name = str_replace('\\', '/', $name);
 	$lib = findDir(__DIR__.'/', $name);
 	if(!is_null($lib)){
 		require_once $lib.$name.'.php';
-	}else{
-		$model = findDir(__DIR__.'/../model/', $name);
-		if(!is_null($model)){
-			require_once $model.$name.'.php';
-		}else{
-            $vendor = findDir(__DIR__.'/../vendors/', $name);
-            if(!is_null($vendor)){
-                require_once $vendor.$name.'.php';
-            }
-        }
+        return true;
 	}
+    $model = findDir(__DIR__.'/../model/', $name);
+    if(!is_null($model)){
+        require_once $model.$name.'.php';
+        return true;
+    }
+    $vendor = findDir(__DIR__.'/../vendors/', $name);
+    if(!is_null($vendor)){
+        require_once $vendor.$name.'.php';
+        return true;
+    }
+     
 }
 
 function findDir($root, $name){

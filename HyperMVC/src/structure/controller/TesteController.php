@@ -41,7 +41,7 @@ class TesteController extends BasicController{
     public function index() {
         echo "Olá index mothod!";
         echo $_SERVER['REQUEST_METHOD'];
-        var_dump($this->request->post->Save);
+        echo Session::teste();
     }
 
     public function __toString() {

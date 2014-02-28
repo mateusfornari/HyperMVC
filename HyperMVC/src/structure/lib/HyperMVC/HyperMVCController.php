@@ -6,11 +6,6 @@ abstract class HyperMVCController {
     protected $templateName = 'template';
     protected $objectName = 'this';
     
-    /**
-     *
-     * @var HyperMVCRequest
-     */
-    protected $request = null;
     
     abstract public function index();
 
@@ -46,17 +41,7 @@ abstract class HyperMVCController {
     
     public function afterRender(){}
     
-    /**
-     * 
-     * @return HyperMVCRequest
-     */
-    public function getRequest() {
-        return $this->request;
-    }
-
-    public function setRequest(HyperMVCRequest $request) {
-        $this->request = $request;
-    }
+    
 
 
     

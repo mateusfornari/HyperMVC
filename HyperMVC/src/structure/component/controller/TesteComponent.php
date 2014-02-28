@@ -1,5 +1,5 @@
 <?php
-class TesteComponent extends HyperMVCController{
+class TesteComponent extends BasicComponent{
     
     public $teste = 'componente teste!';
     

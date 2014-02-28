@@ -105,7 +105,7 @@ class HyperMVC {
     private function process($printOutput = true) {
         
         if (is_null($this->includePath)) {
-            $this->includePath = str_replace('lib/hyper_mvc', '', __DIR__);
+            $this->includePath = str_replace('lib/HyperMVC', '', __DIR__);
         }
         
         if(isset($_GET['hmvcQuery'])){
@@ -114,28 +114,30 @@ class HyperMVC {
         }else{
             $query = null;
         }
+        
+        Request::init();
+        
         $vars = null;
         foreach (self::$routes as $r) {
             $r->setQuery($query);
-            if ($r->match($query)) {
+            if ($r->match()) {
                 $vars = $r->getVars();
                 break;
             }
         }
 
         if(is_null($this->controllerName)){
-            $this->controllerName = isset($vars[':controller']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':controller']).'Controller' : 'HyperMVCController';
+            $this->controllerName = isset($vars[':controller']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':controller']).'Controller' : 'DefaultController';
         }
         
         $controllerFile = $this->getControllerFile();
-        $basicControllerFile = str_replace('lib/hyper_mvc', '', __DIR__).'controller/BasicController.php';
+        $basicControllerFile = str_replace('lib/HyperMVC', '', __DIR__).'controller/BasicController.php';
         
         if (!is_null($controllerFile) && file_exists($basicControllerFile)) {
             ob_start();
             require_once $basicControllerFile;
             require_once $controllerFile;
             $this->controller = new $this->controllerName;
-            $this->controller->setRequest(new HyperMVCRequest());
             $this->output .= ob_get_clean();
         } else {
             return $this->notFoundPage($printOutput);
@@ -178,6 +180,7 @@ class HyperMVC {
         $this->controller->beforeRender();
         $this->output .= ob_get_clean();
 
+        
         $this->initDomDocument();
         $this->findContentTag();
         $this->insertViewInTemplate();
@@ -207,7 +210,7 @@ class HyperMVC {
             $component->includePath = $this->includePath;
             return $component->process($printOutput);
         } else {
-            throw new Exception("Controller ($this->controllerName) not found!");
+            throw new \Exception("Controller ($this->controllerName) not found!");
         }
     }
     
@@ -218,16 +221,17 @@ class HyperMVC {
             $templateName = $this->controller->getTemplateName();
             
             $templateFile = $this->includePath . 'view/' . ($this->viewRoot != '' ? $this->viewRoot . '/' : '') . $templateName . '.html';
-
             if (file_exists($templateFile)) {
-                $this->domDocument = new DOMDocument();
+                $this->domDocument = new \DOMDocument();
 
                 ob_start();
                 include $templateFile;
                 $templateString = ob_get_clean();
 
                 $this->domDocument->loadHTML(str_replace('&', '%amp%', $templateString));
+               
             } else {
+                
                 $this->domDocument = null;
             }
         }
@@ -244,14 +248,15 @@ class HyperMVC {
     }
 
     protected function insertViewInTemplate() {
+        
         if (file_exists($this->viewName)) {
             
             ob_start();
             include $this->viewName;
             $viewString = ob_get_clean();
             
-            if (!is_null($this->domDocument)) {
-                $this->viewElement = new DOMDocument();
+            if (!is_null($this->domDocument) && !is_null($this->contentTag)) {
+                $this->viewElement = new \DOMDocument();
                 $this->viewElement->loadHTML('<html><meta charset="UTF-8">' . str_replace('&', '%amp%', $viewString) . '</html>');
                 $children = $this->viewElement->getElementsByTagName('body')->item(0)->childNodes;
 
@@ -262,7 +267,7 @@ class HyperMVC {
                 }
                 $this->contentTag->removeAttribute(self::DATA_H_VIEW);
             } else {
-                $this->domDocument = new DOMDocument();
+                $this->domDocument = new \DOMDocument();
                 $this->domDocument->loadHTML(str_replace('&', '%amp%', $viewString));
             }
         } else {
@@ -302,7 +307,7 @@ class HyperMVC {
      */
     protected function getElementByAttribute($element, $attribute, $value = null, $result = null) {
         foreach ($element->childNodes as $c) {
-            if ($c instanceof DOMElement) {
+            if ($c instanceof \DOMElement) {
                 if ($c->hasAttribute($attribute) && (is_null($value) || $c->getAttribute($attribute) == $value)) {
                     return $c;
                 } else {
@@ -338,9 +343,10 @@ class HyperMVC {
                 
                 $component = new HyperMVC();
                 $component->controllerName = preg_replace('/[#{}]/', '', $attribute->value);
-                $component->includePath = str_replace('lib/hyper_mvc', '', __DIR__).'component/';
+                $component->includePath = str_replace('lib/HyperMVC', '', __DIR__).'component/';
+                require_once $component->includePath.'controller/BasicComponent.php';
                 $result = $component->process(false);
-                $domComponent = new DOMDocument();
+                $domComponent = new \DOMDocument();
                 $domComponent->loadHTML($result);
                 
                 $children = $domComponent->getElementsByTagName('body')->item(0)->childNodes;
@@ -532,7 +538,7 @@ class HyperMVC {
 
     protected function treatElements($root, $obj = null, $objName = null) {
 
-        if (is_a($root, 'DOMElement')) {
+        if ($root instanceof \DOMElement) {
             $attributes = array();
             foreach ($root->attributes as $a) {
 
@@ -559,7 +565,7 @@ class HyperMVC {
 					if($a->name == 'src' || $a->name == 'href'){
 						$value = $a->value;
 						if(strpos($value, '://') === false && $value[0] != '?' && $value[0] != '#'){
-							$a->value = $this->controller->getRequest()->baseUrl().$value;
+							$a->value = Request::baseUrl().$value;
 						}
 					}
 				}
