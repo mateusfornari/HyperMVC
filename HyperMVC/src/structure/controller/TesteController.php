@@ -6,8 +6,8 @@ class TesteController extends BasicController{
 	
 	public function __construct($nome = 'Olá mundo!') {
 		$this->nome = $nome;
-        $this->viewName = 'template1/Teste';
-        
+        HyperMVC::setViewRoot('template1');
+        $this->templateName = '../template';
 	}
 
 	public function ola(){
@@ -41,7 +41,9 @@ class TesteController extends BasicController{
     public function index() {
         echo "Olá index mothod!";
         echo $_SERVER['REQUEST_METHOD'];
-        echo Session::teste();
+        Session::start();
+        var_dump(Session::get('tes'));
+        Session::set('tes', 'blibli');
     }
 
     public function __toString() {

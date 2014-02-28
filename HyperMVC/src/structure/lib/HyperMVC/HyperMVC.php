@@ -127,13 +127,12 @@ class HyperMVC {
         }
 
         if(is_null($this->controllerName)){
-            $this->controllerName = isset($vars[':controller']) ? preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':controller']).'Controller' : 'DefaultController';
+            $this->controllerName = isset($vars[':controller']) ? $vars[':controller'].'Controller' : 'DefaultController';
         }
         
         $controllerFile = $this->getControllerFile();
         $basicControllerFile = str_replace('lib/HyperMVC', '', __DIR__).'controller/BasicController.php';
-        
-        if (!is_null($controllerFile) && file_exists($basicControllerFile)) {
+        if (!is_null($controllerFile) && file_exists($basicControllerFile) && strtolower($this->controllerName) != 'basiccontroller') {
             ob_start();
             require_once $basicControllerFile;
             require_once $controllerFile;
@@ -151,11 +150,11 @@ class HyperMVC {
         
         $viewNameParts = explode('/', $viewName);
         if(count($viewNameParts) > 1){
-            $this->viewRoot = implode('/', array_slice($viewNameParts, 0, count($viewNameParts) - 1));
+            $this->viewRoot .= implode('/', array_slice($viewNameParts, 0, count($viewNameParts) - 1));
         }
         
-        $viewDir = $this->includePath . 'view/'. $viewName . '/';
-
+        $viewDir = $this->includePath . 'view/'.($this->viewRoot != '' ? $this->viewRoot.'/' : '').$viewName . '/';
+        
         if (isset($vars[':action'])) {
             $action = preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':action']);
         } else {
@@ -285,12 +284,9 @@ class HyperMVC {
         $files = glob($dir . '*');
 
         $contrllerLower = strtolower($dir . $this->controllerName . '.php');
-        $contrllerNoSpace = preg_replace('/[\-_]/', '', $contrllerLower);
-        $contrllerUnder = preg_replace('/[\-]/', '_', $contrllerLower);
-        $contrllerNoSpaceUnder = preg_replace('/[\-]/', '', $contrllerLower);
         foreach ($files as $f) {
             $fLower = strtolower($f);
-            if ($fLower == $contrllerLower || $fLower == $contrllerNoSpace || $fLower == $contrllerNoSpaceUnder || $fLower == $contrllerUnder) {
+            if ($fLower == $contrllerLower) {
                 return $f;
             }
         }
@@ -626,6 +622,10 @@ class HyperMVC {
         $this->noExecute = $noExecute;
     }
 
+    public static function setViewRoot($dirName) {
+        self::$instance->viewRoot = $dirName;
+    }
+    
     /**
      * 
      * @param string $route

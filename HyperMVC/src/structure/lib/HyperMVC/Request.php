@@ -38,10 +38,15 @@ class Request{
         if(is_null(self::$baseUrl)){
             $path = implode('/', array_slice(explode('/', $_SERVER['PHP_SELF']), 0, -1)).'/';
             $host = $_SERVER['HTTP_HOST'];
-            $protocol = 'http';
-            self::$baseUrl = $protocol.'://'.$host.$path;
+            $protocol = ((isset($_SERVER['HTTPS']) && !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') || $_SERVER['SERVER_PORT'] == 443) ? "https" : "http";
+            self::$baseUrl = "$protocol://$host$path";
         }
         return self::$baseUrl;
+    }
+    
+    public static function redirect($location){
+        header("Location: $location");
+        exit();
     }
     
 }
