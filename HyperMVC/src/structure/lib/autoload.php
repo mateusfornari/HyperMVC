@@ -12,6 +12,11 @@ function __autoload($name){
         require_once $model.$name.'.php';
         return true;
     }
+    $controller = findDir(__DIR__.'/../controller/', $name);
+    if(!is_null($controller)){
+        require_once $controller.$name.'.php';
+        return true;
+    }
     $vendor = findDir(__DIR__.'/../vendors/', $name);
     if(!is_null($vendor)){
         require_once $vendor.$name.'.php';
