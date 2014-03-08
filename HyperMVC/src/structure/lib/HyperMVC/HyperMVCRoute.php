@@ -44,7 +44,7 @@ class HyperMVCRoute {
     }
 
     public function setQuery($query) {
-        if (substr($query, 0, 1) == '/') {
+        if ($query[0] == '/') {
             $query = substr($query, 1);
         }
         if (substr($query, -1) == '/') {

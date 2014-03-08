@@ -62,6 +62,13 @@ class HyperMVC {
      * @var string 
      */
     protected $output = '';
+    
+    /**
+     * @var HyperMVCRoute 
+     */
+    protected $route = null;
+    
+    private $remove = false;
 
 
     /**
@@ -122,10 +129,12 @@ class HyperMVC {
             $r->setQuery($query);
             if ($r->match()) {
                 $vars = $r->getVars();
+                $this->route = $r;
                 break;
             }
         }
-
+        
+        
         if(is_null($this->controllerName)){
             $this->controllerName = isset($vars[':controller']) ? $vars[':controller'].'Controller' : 'DefaultController';
         }
@@ -155,7 +164,7 @@ class HyperMVC {
         
         $viewDir = $this->includePath . 'view/'.($this->viewRoot != '' ? $this->viewRoot.'/' : '').$viewName . '/';
         
-        if (isset($vars[':action'])) {
+        if ($viewName != 'NotFound' && isset($vars[':action'])) {
             $action = preg_replace('/[^a-zA-Z0-9_]/', '', $vars[':action']);
         } else {
             $action = 'index';
@@ -163,7 +172,7 @@ class HyperMVC {
 
         $this->viewName = $viewDir . $action . '.html';
         
-        if(!method_exists($this->controller, $action)){
+        if($viewName != 'NotFound' && !method_exists($this->controller, $action)){
             return $this->notFoundPage($printOutput);
         }
         
@@ -319,8 +328,8 @@ class HyperMVC {
         $this->treatElements($this->domDocument->documentElement);
     }
 
-    private function processValue($attribute, $element, $attributeValue, $obj = null, $objName = null) {
-        
+    private function processValue($attribute, &$element, $attributeValue, $obj = null, $objName = null) {
+        $this->remove = false;
         if (!in_array($attribute->name, $this->attributes) || $attribute->name == self::DATA_H_CONTENT) {
             $value = $this->getValue($attributeValue, $obj, $objName);
             $pos = strpos($attribute->value, $attributeValue);
@@ -333,6 +342,7 @@ class HyperMVC {
             } elseif ($attribute->name == self::DATA_H_RENDER) {
                 $value = $this->getValue($attributeValue, $obj, $objName);
                 if (!$value) {
+                    $this->remove = true;
                     $this->elementsToRemove[] = $element;
                 }
             } elseif ($attribute->name == self::DATA_H_COMPONENT) {
@@ -533,8 +543,9 @@ class HyperMVC {
     }
 
     protected function treatElements($root, $obj = null, $objName = null) {
-
+        
         if ($root instanceof \DOMElement) {
+            
             $attributes = array();
             foreach ($root->attributes as $a) {
 
@@ -569,34 +580,40 @@ class HyperMVC {
 					}
 				}
             }
-            foreach ($attributes as $a) {
-                if ($a == self::DATA_H_CONTENT) {
-                    $root->appendChild($this->domDocument->createTextNode($root->getAttribute($a)));
+            
+            if(!$this->remove){
+                foreach ($attributes as $a) {
+                    if ($a == self::DATA_H_CONTENT) {
+                        $root->appendChild($this->domDocument->createTextNode($root->getAttribute($a)));
+                    }
+                    $root->removeAttribute($a);
                 }
-                $root->removeAttribute($a);
-            }
-            foreach ($root->childNodes as $node) {
-                if ($node->nodeType != XML_TEXT_NODE)
-                    continue;
-                if (preg_match_all('/#{[^#{}]+}/', $node->nodeValue, $matches)) {
 
-                    if (isset($matches[0])) {
-                        foreach ($matches[0] as $nodeValue) {
-                            if (!is_null($obj) && !is_null($objName)) {
-                                $value = trim(preg_replace('/[#{}]/', '', $nodeValue));
-                                if (preg_match('/^' . $objName . '[-> ^[]+/', $value) || $objName == $value) {
-                                    $this->processNodeValue($node, $nodeValue, $obj, $objName);
+                foreach ($root->childNodes as $node) {
+                    if ($node->nodeType == XML_TEXT_NODE){
+                        if (preg_match_all('/#{[^#{}]+}/', $node->nodeValue, $matches)) {
+
+                            if (isset($matches[0])) {
+                                foreach ($matches[0] as $nodeValue) {
+                                    if (!is_null($obj) && !is_null($objName)) {
+                                        $value = trim(preg_replace('/[#{}]/', '', $nodeValue));
+                                        if (preg_match('/^' . $objName . '[-> ^[]+/', $value) || $objName == $value) {
+                                            $this->processNodeValue($node, $nodeValue, $obj, $objName);
+                                        }
+                                    } else {
+                                        $this->processNodeValue($node, $nodeValue, $obj, $objName);
+                                    }
                                 }
-                            } else {
-                                $this->processNodeValue($node, $nodeValue, $obj, $objName);
                             }
                         }
                     }
+                
+                    $this->treatElements($node, $obj, $objName);
                 }
+            }else{
+                $this->remove = false;
             }
-            foreach ($root->childNodes as $c) {
-                $this->treatElements($c, $obj, $objName);
-            }
+            
         }
     }
 
@@ -640,5 +657,14 @@ class HyperMVC {
         self::$routes[] = $route;
         return $route;
     }
+
+    /**
+     * 
+     * @return HyperMVCRoute
+     */
+    public static function getRoute(){
+        return self::$instance->route;
+    }
+    
 
 }
