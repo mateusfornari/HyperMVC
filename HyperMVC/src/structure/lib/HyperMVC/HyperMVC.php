@@ -265,7 +265,7 @@ class HyperMVC {
             
             if (!is_null($this->domDocument) && !is_null($this->contentTag)) {
                 $this->viewElement = new \DOMDocument();
-                $this->viewElement->loadHTML('<html><meta charset="UTF-8">' . str_replace('&', '%amp%', $viewString) . '</html>');
+                $this->viewElement->loadHTML('<html><meta charset="UTF-8"><body>' . str_replace('&', '%amp%', $viewString) . '</body></html>');
                 $children = $this->viewElement->getElementsByTagName('body')->item(0)->childNodes;
 
                 foreach ($children as $c) {
