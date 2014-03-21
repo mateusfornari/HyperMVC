@@ -517,7 +517,8 @@ class HyperMVC {
             } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
                 $index = isset($matches[1]) ? $matches[1] : '';
                 $part = preg_replace('/\[(.+)?\]/', '', $part);
-                $value = $value->$part[$index];
+                $value = $value->$part;
+                $value = $value[$index];
             } else {
                 $value = $value->$part;
             }
