@@ -318,7 +318,7 @@ class HyperMVC {
         if (file_exists($this->viewName)) {
             return $this->viewName;
         }
-        $files = glob($dir . '*');
+        $files = glob($dir . '/*');
 
         $viewLower = strtolower($this->viewName);
         foreach ($files as $f) {
