@@ -2,7 +2,7 @@
 
 class DefaultController extends BasicController{
     
-    public function index() {
+    public function indexAction() {
         
     }
 

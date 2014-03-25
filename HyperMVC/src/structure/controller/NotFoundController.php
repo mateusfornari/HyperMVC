@@ -2,7 +2,7 @@
 
 class NotFoundController extends BasicController{
    
-    public function index() {
+    public function indexAction() {
         $this->templateName = null;
     }
 

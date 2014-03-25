@@ -171,7 +171,11 @@ class HyperMVC {
         }
 
         $this->viewName = $viewDir . $action . '.html';
+		
+		$this->viewName = $this->getViewFile();
         
+		$action .= 'Action';
+		
         if($viewName != 'NotFound' && !method_exists($this->controller, $action)){
             return $this->notFoundPage($printOutput);
         }
@@ -199,8 +203,14 @@ class HyperMVC {
             $e->parentNode->removeChild($e);
         }
 
-        $this->output .= str_replace('%amp%', '&', $this->domDocument->saveHTML());
-        
+		if(!is_null($this->contentTag)){
+			$this->output .= str_replace('%amp%', '&', $this->domDocument->saveHTML());
+		}else{
+			$children = $this->domDocument->getElementsByTagName('body')->item(0)->childNodes;
+			foreach ($children as $child){
+				$this->output .= str_replace('%amp%', '&', $this->domDocument->saveHTML($child));
+			}
+		}
         ob_start();
         $this->controller->afterRender();
         $this->output .= ob_get_clean();
@@ -273,15 +283,15 @@ class HyperMVC {
                     $c = $this->domDocument->importNode($c, true);
                     $this->contentTag->appendChild($c);
                 }
-                $this->contentTag->removeAttribute(self::DATA_H_VIEW);
+                
             } else {
                 $this->domDocument = new \DOMDocument();
                 $this->domDocument->loadHTML(str_replace('&', '%amp%', $viewString));
             }
-        } else {
-            $this->notFoundPage(true);
-            exit();
         }
+		if (!is_null($this->contentTag)) {
+			$this->contentTag->removeAttribute(self::DATA_H_VIEW);
+		}
     }
 
     private function getControllerFile() {
@@ -296,6 +306,24 @@ class HyperMVC {
         foreach ($files as $f) {
             $fLower = strtolower($f);
             if ($fLower == $contrllerLower) {
+                return $f;
+            }
+        }
+        return null;
+    }
+	
+	private function getViewFile() {
+        $dir = implode('/', array_slice(explode('/', $this->viewName), 0, -1));
+        
+        if (file_exists($this->viewName)) {
+            return $this->viewName;
+        }
+        $files = glob($dir . '*');
+
+        $viewLower = strtolower($this->viewName);
+        foreach ($files as $f) {
+            $fLower = strtolower($f);
+            if ($fLower == $viewLower) {
                 return $f;
             }
         }

@@ -8,7 +8,7 @@ class TesteComponent extends BasicComponent{
     }
 
 
-    public function index() {
+    public function indexAction() {
         
     }
 

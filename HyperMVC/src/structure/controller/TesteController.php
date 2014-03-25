@@ -38,7 +38,7 @@ class TesteController extends BasicController{
 		return $lista;
 	}
 
-    public function index() {
+    public function indexAction() {
         echo "Olá index mothod!";
         echo $_SERVER['REQUEST_METHOD'];
         Session::start();

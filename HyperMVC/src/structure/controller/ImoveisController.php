@@ -11,13 +11,21 @@ class ImoveisController extends BasicController{
 	}
 
 	
-	public function index() {
+	public function indexAction() {
 		$this->lista = array('abc', 'def', 'ghi');
 	}
+
+	public function testeCaseAction(){
+		$this->lista = array('abc', 'def', 'ghi');
+		$this->templateName = null;
+	}
+
 
 	public function getLista() {
 		return $this->lista;
 	}
+	
+	
 
 
 }

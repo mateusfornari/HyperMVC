@@ -7,7 +7,7 @@ abstract class HyperMVCController {
     protected $objectName = 'this';
     
     
-    abstract public function index();
+    abstract public function indexAction();
 
     public function getViewName() {
         return $this->viewName;
