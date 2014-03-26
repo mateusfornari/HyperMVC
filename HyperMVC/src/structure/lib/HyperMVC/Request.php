@@ -6,6 +6,8 @@ class Request{
     
     public static $get = null;
     
+	public static $files = null;
+    
     private static $method;
     
     private static $baseUrl = null;
@@ -19,6 +21,8 @@ class Request{
         if(isset($_POST)){
             self::$post = (object) $_POST;
             unset($_POST);
+            self::$files = (object) $_FILES;
+            unset($_FILES);
         }
         
         self::$method = $_SERVER['REQUEST_METHOD'];
