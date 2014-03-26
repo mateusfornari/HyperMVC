@@ -3,8 +3,8 @@
 <p>Isso é um teste de página do novo template.</p>
 <div>#{this->nome}</div>
 <form method="post">
-	<input type="text" value="#{this->ola()}" data-h-render="#{this->mostraForm}" data-h-disabled="#{this->mostraForm}"/>
-	<input type="submit"/>
+	<input type="text" data-h-render="#{!this->mostraForm}" value="#{this->ola()}" data-h-disabled="#{this->mostraForm}"/>
+	<button data-h-disabled="#{this->mostraForm}" type="submit">Teste</button>
 </form>
 <table data-h-source="#{this->getDataArray()}">
 	<tr>
@@ -69,8 +69,8 @@
 					<th>Item</th>
 				</tr>
 				<tr data-h-item="litem">
-					<td>#{litem[nome]}</td>
-					<td>#{item->nome} #{item->nome} #{item}</td>
+					<td data-h-render="#{litem[nome]}">#{litem[nome]}</td>
+					<td data-h-selected="#{item->nome}">#{item->nome} #{item->nome} #{item}</td>
 					
 				</tr>
 			</table>

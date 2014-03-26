@@ -371,7 +371,8 @@ class HyperMVC {
                 $value = $this->getValue($attributeValue, $obj, $objName);
                 if (!$value) {
                     $this->remove = true;
-                    $this->elementsToRemove[] = $element;
+					$element->parentNode->removeChild($element);
+//                    $this->elementsToRemove[] = $element;
                 }
             } elseif ($attribute->name == self::DATA_H_COMPONENT) {
                 
@@ -581,20 +582,22 @@ class HyperMVC {
                 if (preg_match_all('/#{[^#{}]+}/', $a->value, $matches)) {
                     if (isset($matches[0])) {
                         foreach ($matches[0] as $attributeValue) {
-                            if (!is_null($obj) && !is_null($objName)) {
-                                $value = trim(preg_replace('/[#{}]/', '', $attributeValue));
-                                if (preg_match('/^' . $objName . '[-> ^[]+/', $value) || $objName == $value) {
-                                    $this->processValue($a, $root, $attributeValue, $obj, $objName);
-                                    if (in_array($a->name, $this->attributes)) {
-                                        $attributes[] = $a->name;
-                                    }
-                                }
-                            } else {
-                                $this->processValue($a, $root, $attributeValue, $obj, $objName);
-                                if (in_array($a->name, $this->attributes)) {
-                                    $attributes[] = $a->name;
-                                }
-                            }
+							if(!$this->remove){
+								if (!is_null($obj) && !is_null($objName)) {
+									$value = trim(preg_replace('/[#{}]/', '', $attributeValue));
+									if (preg_match('/^' . $objName . '[-> ^[]+/', $value) || $objName == $value) {
+										$this->processValue($a, $root, $attributeValue, $obj, $objName);
+										if (in_array($a->name, $this->attributes)) {
+											$attributes[] = $a->name;
+										}
+									}
+								} else {
+									$this->processValue($a, $root, $attributeValue, $obj, $objName);
+									if (in_array($a->name, $this->attributes)) {
+										$attributes[] = $a->name;
+									}
+								}
+							}
                         }
                     }
                 }else{
@@ -618,7 +621,13 @@ class HyperMVC {
                     $root->removeAttribute($a);
                 }
 
-                foreach ($root->childNodes as $node) {
+				$length = $root->childNodes->length;
+                for($i = 0; $i < $length; $i++) {
+					if($root->childNodes->length < $length){
+						$i--;
+						$length = $root->childNodes->length;
+					}
+					$node = $root->childNodes->item($i);
                     if ($node->nodeType == XML_TEXT_NODE){
                         if (preg_match_all('/#{[^#{}]+}/', $node->nodeValue, $matches)) {
 
@@ -636,8 +645,7 @@ class HyperMVC {
                             }
                         }
                     }
-                
-                    $this->treatElements($node, $obj, $objName);
+					$this->treatElements($node, $obj, $objName);
                 }
             }else{
                 $this->remove = false;

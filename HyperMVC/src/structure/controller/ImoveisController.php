@@ -12,7 +12,7 @@ class ImoveisController extends BasicController{
 
 	
 	public function indexAction() {
-		$this->lista = array('abc', 'def', 'ghi');
+		$this->lista = array('abc', 'def', false, 'ghi');
 	}
 
 	public function testeCaseAction(){
