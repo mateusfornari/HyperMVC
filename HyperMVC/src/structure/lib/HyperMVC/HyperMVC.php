@@ -709,9 +709,9 @@ class HyperMVC {
 					}
 				}
 			}
-			foreach ($items as $item){
-				$item->parentNode->removeChild($item);
-			}
+		}
+		foreach ($items as $item){
+			$item->parentNode->removeChild($item);
 		}
     }
 

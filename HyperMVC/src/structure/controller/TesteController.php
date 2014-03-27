@@ -18,7 +18,8 @@ class TesteController extends BasicController{
 	}
 	
 	public function getData(){
-		return array(new TesteController('abc'), new TesteController('def'), new TesteController('ghi'));
+		return array();
+//		return array(new TesteController('abc'), new TesteController('def'), new TesteController('ghi'));
 	}
 	
 	public function getDataArray(){
