@@ -6,12 +6,50 @@
 	<input type="text" data-h-render="#{!this->mostraForm}" value="#{this->ola()}" data-h-disabled="#{this->mostraForm}"/>
 	<button data-h-disabled="#{this->mostraForm}" type="submit">Teste</button>
 </form>
-<table data-h-source="#{this->getDataArray()}">
+
+<p data-h-source="#{this->getData()}" data-h-item="item">#{item->nome}</p>
+
+
+<hr/>
+<p>TEste teste teste teste</p>
+<hr/>
+
+
+
+<table data-h-source="#{this->lista}">
+	<tr data-h-item="item">
+		<td>#{item->id}</td>
+		<td>#{item->nome}</td>
+		<td>
+			<table data-h-source="#{item->lista}" data-h-item="item2">
+				<tr data-h-item="item3">
+					<td>#{item3->teste}</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td data-h-item="item"></td>
+	</tr>
+	<tr>
+		
+	</tr>
+</table>
+
+
+
+
+
+
+
+
+
+<table data-h-source="#{this->getDataArray()}" data-h-item="item">
 	<tr>
 		<th>Nome</th>
 		<th>Lista</th>
 	</tr>
-	<tr data-h-item="item" data-h-source="#{item[lista]}">
+	<tr data-h-source="#{item[lista]}">
 		<td>#{item[nome]}</td>
 		<td>
 			<table data-h-item="litem">
@@ -30,21 +68,31 @@
 	</tr>
 </table>
 
+<hr/>
+<p>TEste teste teste teste</p>
+<hr/>
+
+
 <table data-h-source="#{this->getData()}">
 	<tr>
 		<th>Nome</th>
 		<th>Lista</th>
 	</tr>
-	<tr data-h-item="item">
-		<td>#{item->nome}</td>
+	<tr>
+		<td>Teste</td>
 		<td>
-			<table data-h-source="#{item->getData()}">
+			<table data-h-source="#{this->getData()}">
 				<tr>
 					<th>Nome</th>
 					<th>Item</th>
 				</tr>
 				<tr data-h-item="litem">
 					<td>#{litem->nome}</td>
+					<td>#{litem->nome}</td>
+					
+				</tr>
+				<tr data-h-item="item">
+					<td>#{item->nome}</td>
 					<td>#{item->nome}</td>
 					
 				</tr>
@@ -54,16 +102,17 @@
 	</tr>
 </table>
 
+<hr/>
 
 <table data-h-source="#{this->getData()}">
 	<tr>
 		<th>Nome</th>
 		<th>Lista</th>
 	</tr>
-	<tr data-h-item="item">
+	<tr data-h-item="item" data-h-source="#{item->getDataArray()}">
 		<td>#{item->nome}</td>
 		<td>
-			<table data-h-source="#{item->getDataArray()}">
+			<table>
 				<tr>
 					<th>Nome</th>
 					<th>Item</th>

@@ -330,6 +330,7 @@ class HyperMVC {
         return null;
     }
 
+
     /**
      * 
      * @param type $element
@@ -339,6 +340,9 @@ class HyperMVC {
      * @return DOMElement
      */
     protected function getElementByAttribute($element, $attribute, $value = null, $result = null) {
+		if ($element->hasAttribute($attribute) && (is_null($value) || $element->getAttribute($attribute) == $value)) {
+			return $element;
+		}
         foreach ($element->childNodes as $c) {
             if ($c instanceof \DOMElement) {
                 if ($c->hasAttribute($attribute) && (is_null($value) || $c->getAttribute($attribute) == $value)) {
@@ -350,7 +354,33 @@ class HyperMVC {
         }
         return $result;
     }
-
+    /**
+     * 
+     * @param type $element
+     * @param type $attribute
+     * @param type $value
+     * @param type $result
+     * @return DOMElement
+     */
+    protected function getItemsDataSource($element, &$items = array()) {
+		if ($element->hasAttribute(self::DATA_H_ITEM)) {
+			$items[] = $element;
+		}else{
+			foreach ($element->childNodes as $c) {
+				if ($c instanceof \DOMElement) {
+					if ($c->hasAttribute(self::DATA_H_ITEM)) {
+						$items[] = $c;
+					} elseif($c->hasAttribute(self::DATA_H_SOURCE)) {
+						break;
+					} else {
+						$items = $this->getItemsDataSource($c, $items);
+					}
+				}
+			}
+		}
+		return $items;
+    }
+	
     protected function execute() {
 
         $this->treatElements($this->domDocument->documentElement);
@@ -366,6 +396,7 @@ class HyperMVC {
             $attribute->value = $val;
         } else {
             if ($attribute->name == self::DATA_H_SOURCE) {
+				$element->removeAttribute(self::DATA_H_SOURCE);
                 $this->treatDataSource($element, $attribute, $obj, $objName);
             } elseif ($attribute->name == self::DATA_H_RENDER) {
                 $value = $this->getValue($attributeValue, $obj, $objName);
@@ -396,7 +427,7 @@ class HyperMVC {
                 $value = $this->getValue($attributeValue, $obj, $objName);
                 if ($value) {
                     $element->setAttribute('checked', 'checked');
-                }#{t->mostraForm}
+                }
                 $element->removeAttribute(self::DATA_H_CHECKED);
             } elseif ($attribute->name == self::DATA_H_DISABLED) {
                 $value = $this->getValue($attributeValue, $obj, $objName);
@@ -431,7 +462,7 @@ class HyperMVC {
     private function getValue($attributeValue, $obj = null, $objName = null) {
 
         if (is_string($obj)) {
-            return $obj;
+			return $obj;
         }
         $attrValue = preg_replace('/[#{}]/', '', $attributeValue);
         $not = substr($attrValue, 0, 1) == '!';
@@ -464,7 +495,11 @@ class HyperMVC {
                 if (!preg_match('/\[(.+)?\]/', $attrParts[0]) && !preg_match('/\(\)/', $attrParts[0])) {
                     $className = $attrParts[0];
                     if ($className != $this->controller->getObjectName()) {
-                        $obj = new $className();
+						if(class_exists($className)){
+							$obj = new $className();
+						}else{
+							return null;
+						}
                     } else {
                         $obj = $this->controller;
                     }
@@ -583,20 +618,12 @@ class HyperMVC {
                     if (isset($matches[0])) {
                         foreach ($matches[0] as $attributeValue) {
 							if(!$this->remove){
-								if (!is_null($obj) && !is_null($objName)) {
-									$value = trim(preg_replace('/[#{}]/', '', $attributeValue));
-									if (preg_match('/^' . $objName . '[-> ^[]+/', $value) || $objName == $value) {
-										$this->processValue($a, $root, $attributeValue, $obj, $objName);
-										if (in_array($a->name, $this->attributes)) {
-											$attributes[] = $a->name;
-										}
-									}
-								} else {
-									$this->processValue($a, $root, $attributeValue, $obj, $objName);
-									if (in_array($a->name, $this->attributes)) {
-										$attributes[] = $a->name;
-									}
+								
+								$this->processValue($a, $root, $attributeValue, $obj, $objName);
+								if (in_array($a->name, $this->attributes)) {
+									$attributes[] = $a->name;
 								}
+
 							}
                         }
                     }
@@ -625,8 +652,8 @@ class HyperMVC {
                 for($i = 0; $i < $length; $i++) {
 					if($root->childNodes->length < $length){
 						$i--;
-						$length = $root->childNodes->length;
 					}
+					$length = $root->childNodes->length;
 					$node = $root->childNodes->item($i);
                     if ($node->nodeType == XML_TEXT_NODE){
                         if (preg_match_all('/#{[^#{}]+}/', $node->nodeValue, $matches)) {
@@ -656,23 +683,36 @@ class HyperMVC {
 
     protected function treatDataSource($element, $attribute, $obj = null, $objName = null) {
         $list = $this->getValue($attribute->value, $obj, $objName);
+		
+        $items = $this->getItemsDataSource($element);
+		
+		$itemNames = array();
+		foreach ($items as $item){
+			$itemNames[] = $item->getAttribute(self::DATA_H_ITEM);
+			$item->removeAttribute(self::DATA_H_ITEM);
+		}
+		if(count($items) > 0 && $list){
+			$last = $items[0];
+			foreach ($list as $l) {
+				
+				for ($j = 0; $j < count($items); $j++){
+					$item = $items[$j];
+					$i = $item->cloneNode(true);
 
-        $item = $this->getElementByAttribute($element, self::DATA_H_ITEM);
-
-        $itemName = $item->getAttribute(self::DATA_H_ITEM);
-
-        $item->removeAttribute(self::DATA_H_ITEM);
-
-        foreach ($list as $l) {
-
-            $i = $item->cloneNode(true);
-
-            $this->treatElements($i, $l, $itemName);
-
-            $item->parentNode->appendChild($i);
-        }
-
-        $item->parentNode->removeChild($item);
+					$this->treatElements($i, $l, $itemNames[$j]);
+					
+					if($last->parentNode === $item->parentNode){
+						$item->parentNode->insertBefore($i, $last);
+					}else{
+						$item->parentNode->insertBefore($i, $item);
+						$last = $item;
+					}
+				}
+			}
+			foreach ($items as $item){
+				$item->parentNode->removeChild($item);
+			}
+		}
     }
 
     public static function setNoExecute($noExecute) {

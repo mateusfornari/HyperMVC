@@ -45,8 +45,12 @@ class TesteController extends BasicController{
         var_dump(Session::get('tes'));
         Session::set('tes', 'blibli');
     }
+	
+	public function testeAction(){
+		
+	}
 
-    public function __toString() {
+	public function __toString() {
         return $this->nome;
     }
     
