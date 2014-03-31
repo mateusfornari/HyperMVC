@@ -2,6 +2,8 @@
 class TesteController extends BasicController{
 	public $nome;
 	
+	public $apelido = 'apelido';
+	
 	public $mostraForm = true;
     
     public $lista = array();

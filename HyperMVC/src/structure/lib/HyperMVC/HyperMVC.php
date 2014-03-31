@@ -492,7 +492,7 @@ class HyperMVC {
                     if (isset($matches[0])) {
                         foreach ($matches[0] as $attributeValue) {
 							if(!$this->remove){
-								if(!$this->processValue($a, $root, $attributeValue, $obj, $objName)){
+								if(!$this->processValue($a, $root, $attributeValue, $obj, $objName) || $root->hasAttribute('removed')){
                                     return;
                                 }
                                 if (in_array($a->name, $this->attributes)) {
@@ -513,9 +513,7 @@ class HyperMVC {
 						}
 					}
 				}
-                if(is_null($root->parentNode)){
-                    break;
-                }
+                
             }
             
             if(!$this->remove){
@@ -528,14 +526,14 @@ class HyperMVC {
                 
 				$length = $root->childNodes->length;
                 for($i = 0; $i < $length; $i++) {
-                    if($root->childNodes->length < $length){
+					if($root->childNodes->length < $length){
 						$i--;
 					}
 					$length = $root->childNodes->length;
 					$node = $root->childNodes->item($i);
-                    if ($node->nodeType == XML_TEXT_NODE){
+					if ($node->nodeType == XML_TEXT_NODE){
                         if (preg_match_all('/#{[^#{}]+}/', $node->nodeValue, $matches)) {
-
+							
                             if (isset($matches[0])) {
                                 foreach ($matches[0] as $nodeValue) {
                                     $this->processNodeValue($node, $nodeValue, $obj, $objName);
@@ -564,6 +562,7 @@ class HyperMVC {
             if($name == $this->controller->getObjectName()){
                 throw new Exception("Item has the same name ($name) as controller! ");
             }
+			$item->setAttribute('removed', 'removed');
 			$itemNames[] = $name;
 			$item->removeAttribute(self::DATA_H_ITEM);
 		}
@@ -574,7 +573,7 @@ class HyperMVC {
 				for ($j = 0; $j < count($items); $j++){
 					$item = $items[$j];
 					$i = $item->cloneNode(true);
-
+					$i->removeAttribute('removed');
 					$this->treatElements($i, $l, $itemNames[$j]);
 					
 					if($last->parentNode === $item->parentNode){
