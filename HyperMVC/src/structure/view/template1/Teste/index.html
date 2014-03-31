@@ -3,7 +3,7 @@
 <p>Isso é um teste de página do novo template.</p>
 <div>#{Request::$method}</div>
 <form method="post">
-	<input type="text" data-h-render="#{$obj->mostraForm}" value="#{$obj->ola()}" data-h-disabled="#{$obj->mostraForm}"/>
+	<input type="text" data-h-render="#{$obj->mostraForm == 1 && 0}" value="#{$obj->ola()}" data-h-disabled="#{$obj->mostraForm}"/>
 	<button data-h-disabled="#{$obj->mostraForm}" type="submit">Teste</button>
 </form>
 
@@ -21,7 +21,7 @@
 <p>TEste teste teste teste</p>
 <hr/>
 
-<table data-h-source="#{$obj->getData()}">
+<table data-h-source=" #{ $obj->getData( ) } ">
 	<tr data-h-item="item">
 		<td>#{$item->nome}</td>
 		<td data-h-source="#{$obj->getData()}">

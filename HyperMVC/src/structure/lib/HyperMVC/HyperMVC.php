@@ -204,11 +204,11 @@ class HyperMVC {
         }
 
 		if(!is_null($this->contentTag)){
-			$this->output .= str_replace('%amp%', '&', $this->domDocument->saveHTML());
+			$this->output .= $this->domDocument->saveHTML();
 		}else{
 			$children = $this->domDocument->getElementsByTagName('body')->item(0)->childNodes;
 			foreach ($children as $child){
-				$this->output .= str_replace('%amp%', '&', $this->domDocument->saveHTML($child));
+				$this->output .= $this->domDocument->saveHTML($child);
 			}
 		}
         ob_start();
@@ -246,7 +246,7 @@ class HyperMVC {
                 include $templateFile;
                 $templateString = ob_get_clean();
 
-                $this->domDocument->loadHTML(str_replace('&', '%amp%', $templateString));
+                @$this->domDocument->loadHTML($templateString);
                
             } else {
                 
@@ -275,7 +275,7 @@ class HyperMVC {
             
             if (!is_null($this->domDocument) && !is_null($this->contentTag)) {
                 $this->viewElement = new \DOMDocument();
-                $this->viewElement->loadHTML('<html><meta charset="UTF-8"><body>' . str_replace('&', '%amp%', $viewString) . '</body></html>');
+                @$this->viewElement->loadHTML('<html><meta charset="UTF-8"><body>' . $viewString . '</body></html>');
                 $children = $this->viewElement->getElementsByTagName('body')->item(0)->childNodes;
 
                 foreach ($children as $c) {
@@ -286,7 +286,7 @@ class HyperMVC {
                 
             } else {
                 $this->domDocument = new \DOMDocument();
-                $this->domDocument->loadHTML(str_replace('&', '%amp%', $viewString));
+                @$this->domDocument->loadHTML($viewString);
             }
         }
 		if (!is_null($this->contentTag)) {
@@ -463,8 +463,10 @@ class HyperMVC {
 
     private function getValue($attributeValue, $hmvcValueObject = null, $objectName = null){
         
-        $attributeValue = preg_replace("/[\n\r\t #{}]/", '', $attributeValue);
-        
+		if(preg_match('/^#{(.+)}$/', trim($attributeValue), $matches)){
+			$attributeValue = trim($matches[1]);
+		}
+		
         if($objectName){
             $$objectName = $hmvcValueObject;
         }
@@ -488,7 +490,7 @@ class HyperMVC {
                 }
                 $length = $root->attributes->length;
                 $a = $root->attributes->item($i);
-                if (preg_match_all('/#{[^#{}]+}/', $a->value, $matches)) {
+                if (preg_match_all('/^#{.+}$/', trim($a->value), $matches)) {
                     if (isset($matches[0])) {
                         foreach ($matches[0] as $attributeValue) {
 							if(!$this->remove){
