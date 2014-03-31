@@ -1,139 +1,36 @@
 <h2 style="color: #0C0;">Teste de página <?php echo 'Olá PHP';?></h2>
 <a href="?foo=bar&bar=foo">Teste</a>
 <p>Isso é um teste de página do novo template.</p>
-<div>#{this->nome}</div>
+<div>#{Request::$method}</div>
 <form method="post">
-	<input type="text" data-h-render="#{!this->mostraForm}" value="#{this->ola()}" data-h-disabled="#{this->mostraForm}"/>
-	<button data-h-disabled="#{this->mostraForm}" type="submit">Teste</button>
+	<input type="text" data-h-render="#{$obj->mostraForm}" value="#{$obj->ola()}" data-h-disabled="#{$obj->mostraForm}"/>
+	<button data-h-disabled="#{$obj->mostraForm}" type="submit">Teste</button>
 </form>
 
-<p data-h-source="#{this->getData()}" data-h-item="item">#{item->nome}</p>
+<p data-h-source="#{$obj->getData()}" data-h-item="item">#{$item->nome}</p>
+
+
+<hr/>
+<p>TEste teste teste teste #{date('d/m/Y H:i:s')}</p>
+<hr/>
+
+
 
 
 <hr/>
 <p>TEste teste teste teste</p>
 <hr/>
 
-
-
-<table data-h-source="#{this->lista}">
+<table data-h-source="#{$obj->getData()}">
 	<tr data-h-item="item">
-		<td>#{item->id}</td>
-		<td>#{item->nome}</td>
-		<td>
-			<table data-h-source="#{item->lista}" data-h-item="item2">
-				<tr data-h-item="item3">
-					<td>#{item3->teste}</td>
-				</tr>
-			</table>
+		<td>#{$item->nome}</td>
+		<td data-h-source="#{$obj->getData()}">
+			<p data-h-item="item2">#{$item2->nome}</p>
 		</td>
 	</tr>
 	<tr>
-		<td data-h-item="item"></td>
-	</tr>
-	<tr>
-		
-	</tr>
-</table>
-
-
-
-
-
-
-
-
-
-<table data-h-source="#{this->getDataArray()}" data-h-item="item">
-	<tr>
-		<th>Nome</th>
-		<th>Lista</th>
-	</tr>
-	<tr data-h-source="#{item[lista]}">
-		<td>#{item[nome]}</td>
-		<td>
-			<table data-h-item="litem">
-				<tr>
-					<th>Nome</th>
-					<th>Item</th>
-				</tr>
-				<tr>
-					<td>#{litem[nome]}</td>
-					<td>#{item[nome]}</td>
-					
-				</tr>
-			</table>
-				
+		<td data-h-source="#{$obj->getData()}">
+			<p data-h-item="item2">#{$item2->nome}</p>
 		</td>
 	</tr>
 </table>
-
-<hr/>
-<p>TEste teste teste teste</p>
-<hr/>
-
-
-<table data-h-source="#{this->getData()}">
-	<tr>
-		<th>Nome</th>
-		<th>Lista</th>
-	</tr>
-	<tr>
-		<td>Teste</td>
-		<td>
-			<table data-h-source="#{this->getData()}">
-				<tr>
-					<th>Nome</th>
-					<th>Item</th>
-				</tr>
-				<tr data-h-item="litem">
-					<td>#{litem->nome}</td>
-					<td>#{litem->nome}</td>
-					
-				</tr>
-				<tr data-h-item="item">
-					<td>#{item->nome}</td>
-					<td>#{item->nome}</td>
-					
-				</tr>
-			</table>
-				
-		</td>
-	</tr>
-</table>
-
-<hr/>
-
-<table data-h-source="#{this->getData()}">
-	<tr>
-		<th>Nome</th>
-		<th>Lista</th>
-	</tr>
-	<tr data-h-item="item" data-h-source="#{item->getDataArray()}">
-		<td>#{item->nome}</td>
-		<td>
-			<table>
-				<tr>
-					<th>Nome</th>
-					<th>Item</th>
-				</tr>
-				<tr data-h-item="litem">
-					<td data-h-render="#{litem[nome]}">#{litem[nome]}</td>
-					<td data-h-selected="#{item->nome}">#{item->nome} #{item->nome} #{item}</td>
-					
-				</tr>
-			</table>
-				
-		</td>
-	</tr>
-</table>
-
-<p>#{this->nome}</p>
-<form method="post" data-h-render="#{this->mostraForm}" name="teste" action="/sc/garopaba/teste">
-	<input type="text" name="teste"/>
-	<input type="submit" name="Save" value="save"/>
-</form>
-
-<div data-h-component="#{TesteComponent}">
-	
-</div>

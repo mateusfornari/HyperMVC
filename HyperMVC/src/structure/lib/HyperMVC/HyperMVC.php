@@ -398,6 +398,7 @@ class HyperMVC {
             if ($attribute->name == self::DATA_H_SOURCE) {
 				$element->removeAttribute(self::DATA_H_SOURCE);
                 $this->treatDataSource($element, $attribute, $obj, $objName);
+                
             } elseif ($attribute->name == self::DATA_H_RENDER) {
                 $value = $this->getValue($attributeValue, $obj, $objName);
                 if (!$value) {
@@ -449,6 +450,7 @@ class HyperMVC {
                 $element->removeAttribute(self::DATA_H_REQUIRED);
             }
         }
+        return true;
     }
 
     private function processNodeValue($element, $nodeValue, $obj = null, $objName = null) {
@@ -459,168 +461,41 @@ class HyperMVC {
         $element->nodeValue = $val;
     }
 
-    private function getValue($attributeValue, $obj = null, $objName = null) {
-
-        if (is_string($obj)) {
-			return $obj;
+    private function getValue($attributeValue, $hmvcValueObject = null, $objectName = null){
+        
+        $attributeValue = preg_replace("/[\n\r\t #{}]/", '', $attributeValue);
+        
+        if($objectName){
+            $$objectName = $hmvcValueObject;
         }
-        $attrValue = preg_replace('/[#{}]/', '', $attributeValue);
-        $not = substr($attrValue, 0, 1) == '!';
-        if ($not)
-            $attrValue = substr($attrValue, 1);
-        $attrParts = explode('->', $attrValue);
-
-        if (is_null($obj)) {
-
-            if (preg_match('/::/', $attrParts[0])) {
-                $classParts = explode('::', $attrParts[0]);
-                $value = $classParts[0];
-                for ($i = 1; $i < sizeof($classParts); $i++) {
-                    $part = $classParts[$i];
-                    if (preg_match('/\((.+)?\)/', $part)) {
-                        $part = preg_replace('/\((.+)?\)/', '', $part);
-                        $value = $value::$part();
-                    } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
-                        $index = isset($matches[1]) ? $matches[1] : '';
-                        $part = preg_replace('/\[(.+)?\]/', '', $part);
-                        $part = str_replace('$', '', $part);
-                        $value = $value::$$part;
-                        $value = $value[$index];
-                    } else {
-                        $part = str_replace('$', '', $part);
-                        $value = $value::$$part;
-                    }
-                }
-            } else {
-                if (!preg_match('/\[(.+)?\]/', $attrParts[0]) && !preg_match('/\(\)/', $attrParts[0])) {
-                    $className = $attrParts[0];
-                    if ($className != $this->controller->getObjectName()) {
-						if(class_exists($className)){
-							$obj = new $className();
-						}else{
-							return null;
-						}
-                    } else {
-                        $obj = $this->controller;
-                    }
-                    $value = $obj;
-                } else {
-                    if (preg_match('/\(\)/', $attrParts[0])) {
-                        $function = preg_replace('/[\(\)]/', '', $attrParts[0]);
-                        $value = $function();
-                    } else {
-                        return null;
-                    }
-                }
-            }
-        } else {
-            if ($objName != preg_replace('/\[(.+)?\]/', '', $attrParts[0])) {
-                if (!preg_match('/\[(.+)?\]/', $attrParts[0])) {
-                    $className = $attrParts[0];
-                    if ($className != $this->controller->getObjectName()) {
-                        if (class_exists($className))
-                            $obj = new $className();
-                        else
-                            return $obj;
-                    }else {
-                        $obj = $this->controller;
-                    }
-                    $value = $obj;
-                } else {
-                    return $obj;
-                }
-            } else {
-                if (preg_match('/\[(.+)?\]/', $attrParts[0], $matches)) {
-                    $index = isset($matches[1]) ? $matches[1] : '';
-                    $part = preg_replace('/\[(.+)?\]/', '', $attrParts[0]);
-                    $value = $obj[$index];
-                } else {
-                    $value = $obj;
-                }
-            }
-        }
-
-        for ($i = 1; $i < sizeof($attrParts); $i++) {
-            if (preg_match('/::/', $attrParts[$i])) {
-                $classParts = explode('::', $attrParts[$i]);
-                $part = $classParts[0];
-                if (preg_match('/\((.+)?\)/', $part)) {
-                    $part = preg_replace('/\((.+)?\)/', '', $part);
-                    $value = $value->$part();
-                } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
-                    $index = isset($matches[1]) ? $matches[1] : '';
-                    $part = preg_replace('/\[(.+)?\]/', '', $part);
-                    $part = str_replace('$', '', $part);
-                    $value = $value->$part;
-                    $value = $value[$index];
-                } else {
-                    $part = str_replace('$', '', $part);
-                    $value = $value->$part;
-                }
-                for ($j = 1; $j < sizeof($classParts); $j++) {
-                    $part = $classParts[$j];
-                    if (preg_match('/\((.+)?\)/', $part)) {
-                        $part = preg_replace('/\((.+)?\)/', '', $part);
-                        $value = $value::$part();
-                    } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
-                        $index = isset($matches[1]) ? $matches[1] : '';
-                        $part = preg_replace('/\[(.+)?\]/', '', $part);
-                        $part = str_replace('$', '', $part);
-                        $value = $value::$$part;
-                        $value = $value[$index];
-                    } else {
-                        $part = str_replace('$', '', $part);
-                        $value = $value::$$part;
-                    }
-                }
-            }
-            $part = $attrParts[$i];
-            if (preg_match('/\((.+)?\)/', $part)) {
-                $part = preg_replace('/\((.+)?\)/', '', $part);
-                $value = $value->$part();
-            } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
-                $index = isset($matches[1]) ? $matches[1] : '';
-                $part = preg_replace('/\[(.+)?\]/', '', $part);
-                $value = $value->$part;
-                $value = $value[$index];
-            } else {
-                $value = $value->$part;
-            }
-        }
-        return $not ? !$value : $value;
+        $controllerObjName = $this->controller->getObjectName();
+        
+        $$controllerObjName = $this->controller;
+        
+        return eval("return $attributeValue;");
+        
     }
-
-    private function compileValue($value, $part) {
-        if (preg_match('/\((.+)?\)/', $part)) {
-            $part = preg_replace('/\((.+)?\)/', '', $part);
-            $value = $value::$part();
-        } elseif (preg_match('/\[(.+)?\]/', $part, $matches)) {
-            $index = isset($matches[1]) ? $matches[1] : '';
-            $part = preg_replace('/\[(.+)?\]/', '', $part);
-            $part = str_replace('$', '', $part);
-            $value = $value::$$part;
-            $value = $value[$index];
-        } else {
-            $part = str_replace('$', '', $part);
-            $value = $value::$$part;
-        }
-        return $value;
-    }
-
+    
     protected function treatElements($root, $obj = null, $objName = null) {
         
         if ($root instanceof \DOMElement) {
             
             $attributes = array();
-            foreach ($root->attributes as $a) {
-
+            $length = $root->attributes->length;
+            for($i = 0; $i < $length; $i++) {
+                if($root->attributes->length < $length){
+                    $i--;
+                }
+                $length = $root->attributes->length;
+                $a = $root->attributes->item($i);
                 if (preg_match_all('/#{[^#{}]+}/', $a->value, $matches)) {
                     if (isset($matches[0])) {
                         foreach ($matches[0] as $attributeValue) {
 							if(!$this->remove){
-								
-								$this->processValue($a, $root, $attributeValue, $obj, $objName);
-								if (in_array($a->name, $this->attributes)) {
+								if(!$this->processValue($a, $root, $attributeValue, $obj, $objName)){
+                                    return;
+                                }
+                                if (in_array($a->name, $this->attributes)) {
 									$attributes[] = $a->name;
 								}
 
@@ -638,6 +513,9 @@ class HyperMVC {
 						}
 					}
 				}
+                if(is_null($root->parentNode)){
+                    break;
+                }
             }
             
             if(!$this->remove){
@@ -647,10 +525,10 @@ class HyperMVC {
                     }
                     $root->removeAttribute($a);
                 }
-
+                
 				$length = $root->childNodes->length;
                 for($i = 0; $i < $length; $i++) {
-					if($root->childNodes->length < $length){
+                    if($root->childNodes->length < $length){
 						$i--;
 					}
 					$length = $root->childNodes->length;
@@ -660,14 +538,7 @@ class HyperMVC {
 
                             if (isset($matches[0])) {
                                 foreach ($matches[0] as $nodeValue) {
-                                    if (!is_null($obj) && !is_null($objName)) {
-                                        $value = trim(preg_replace('/[#{}]/', '', $nodeValue));
-                                        if (preg_match('/^' . $objName . '[-> ^[]+/', $value) || $objName == $value) {
-                                            $this->processNodeValue($node, $nodeValue, $obj, $objName);
-                                        }
-                                    } else {
-                                        $this->processNodeValue($node, $nodeValue, $obj, $objName);
-                                    }
+                                    $this->processNodeValue($node, $nodeValue, $obj, $objName);
                                 }
                             }
                         }
@@ -688,10 +559,15 @@ class HyperMVC {
 		
 		$itemNames = array();
 		foreach ($items as $item){
-			$itemNames[] = $item->getAttribute(self::DATA_H_ITEM);
+            $name = $item->getAttribute(self::DATA_H_ITEM);
+            $name = preg_replace('/[^a-zA-Z0-9_]/', '', $name);
+            if($name == $this->controller->getObjectName()){
+                throw new Exception("Item has the same name ($name) as controller! ");
+            }
+			$itemNames[] = $name;
 			$item->removeAttribute(self::DATA_H_ITEM);
 		}
-		if(count($items) > 0 && $list){
+		if(count($items) > 0 && $list && count($list) > 0){
 			$last = $items[0];
 			foreach ($list as $l) {
 				
@@ -725,7 +601,7 @@ class HyperMVC {
     
     /**
      * 
-     * @param string $route
+     * @param string $routeitemNames
      * @param array $varsFormat
      * @return HyperMVCRoute
      */

@@ -4,7 +4,7 @@ abstract class HyperMVCController {
 
     protected $viewName = null;
     protected $templateName = 'template';
-    protected $objectName = 'this';
+    private $objectName = 'obj';
     
     
     abstract public function indexAction();
@@ -30,7 +30,10 @@ abstract class HyperMVCController {
     }
 
     public function setObjectName($objectName) {
-        $this->objectName = $objectName;
+        $this->objectName = preg_replace('/[^a-zA-Z0-9_]/', '', $objectName);
+        if($this->objectName == 'this'){
+            throw new Exception("Invalid controller object name (this)! ");
+        }
     }
     
     public function beforeAction(){}

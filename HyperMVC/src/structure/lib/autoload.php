@@ -1,6 +1,7 @@
 <?php
+spl_autoload_register('autoloadHypermvc');
 
-function __autoload($name){
+function autoloadHypermvc($name){
     $name = str_replace('\\', '/', $name);
 	$lib = findDir(__DIR__.'/', $name);
 	if(!is_null($lib)){
@@ -40,4 +41,3 @@ function findDir($root, $name){
 		return null;
 	}
 }
-?>

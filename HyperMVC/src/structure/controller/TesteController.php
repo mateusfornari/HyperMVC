@@ -3,6 +3,8 @@ class TesteController extends BasicController{
 	public $nome;
 	
 	public $mostraForm = true;
+    
+    public $lista = array();
 	
 	public function __construct($nome = 'Olá mundo!') {
 		$this->nome = $nome;
@@ -18,8 +20,8 @@ class TesteController extends BasicController{
 	}
 	
 	public function getData(){
-		return array();
-//		return array(new TesteController('abc'), new TesteController('def'), new TesteController('ghi'));
+//		return array();
+		return array(new TesteController('abc'), new TesteController('def'), new TesteController('ghi'));
 	}
 	
 	public function getDataArray(){

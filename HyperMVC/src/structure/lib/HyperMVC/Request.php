@@ -8,7 +8,7 @@ class Request{
     
 	public static $files = null;
     
-    private static $method;
+    public static $method;
     
     private static $baseUrl = null;
     
@@ -51,6 +51,15 @@ class Request{
     public static function redirect($location){
         header("Location: $location");
         exit();
+    }
+    
+    public static function queryString(){
+        $array = (array)self::$get;
+        $data = array();
+        foreach ($array as $k => $v){
+            $data[] = "$k=$v";
+        }
+        return implode('&', $data);
     }
     
 }
