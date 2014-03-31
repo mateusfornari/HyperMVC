@@ -69,6 +69,8 @@ class HyperMVC {
     protected $route = null;
     
     private $remove = false;
+	
+	private $processed = array();
 
 
     /**
@@ -101,6 +103,7 @@ class HyperMVC {
      */
     public static function render($printOutput = true){
         self::$instance = new HyperMVC();
+		
         self::$instance->process($printOutput);
     }
     
@@ -196,6 +199,7 @@ class HyperMVC {
         $this->initDomDocument();
         $this->findContentTag();
         $this->insertViewInTemplate();
+		
         if (!$this->noExecute)
             $this->execute();
 
@@ -479,8 +483,7 @@ class HyperMVC {
     }
     
     protected function treatElements($root, $obj = null, $objName = null) {
-        
-        if ($root instanceof \DOMElement) {
+		if ($root instanceof \DOMElement && !$this->processed($root)) {
             
             $attributes = array();
             $length = $root->attributes->length;
@@ -490,7 +493,7 @@ class HyperMVC {
                 }
                 $length = $root->attributes->length;
                 $a = $root->attributes->item($i);
-                if (preg_match_all('/^#{.+}$/', trim($a->value), $matches)) {
+                if (preg_match_all('/(#{[^#{}]+})|(#{[^#{}]*"[^"]+"[^#{}]*})|(#{[^#{}]*\'[^\']+\'[^#{}]*})/', trim($a->value), $matches)) {
                     if (isset($matches[0])) {
                         foreach ($matches[0] as $attributeValue) {
 							if(!$this->remove){
@@ -533,6 +536,7 @@ class HyperMVC {
 					}
 					$length = $root->childNodes->length;
 					$node = $root->childNodes->item($i);
+					
 					if ($node->nodeType == XML_TEXT_NODE){
                         if (preg_match_all('/#{[^#{}]+}/', $node->nodeValue, $matches)) {
 							
@@ -549,10 +553,21 @@ class HyperMVC {
                 $this->remove = false;
             }
             
+			$this->processed[] = $root;
         }
     }
 
-    protected function treatDataSource($element, $attribute, $obj = null, $objName = null) {
+	private function processed($node){
+		foreach ($this->processed as $n){
+			if($n->isSameNode($node)){
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	protected function treatDataSource($element, $attribute, $obj = null, $objName = null) {
         $list = $this->getValue($attribute->value, $obj, $objName);
 		
         $items = $this->getItemsDataSource($element);
@@ -574,7 +589,7 @@ class HyperMVC {
 				
 				for ($j = 0; $j < count($items); $j++){
 					$item = $items[$j];
-					$i = $item->cloneNode(true);
+					$i = clone $item;
 					$i->removeAttribute('removed');
 					$this->treatElements($i, $l, $itemNames[$j]);
 					
