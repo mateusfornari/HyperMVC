@@ -500,17 +500,17 @@ class HyperMVC {
 							}
                         }
                     }
-                }else{
-					if($a->name == 'src' || $a->name == 'href' || $a->name == 'action'){
-						$value = $a->value;
-						if(strpos($value, '://') === false && $value[0] != '?' && $value[0] != '#'){
-                            if($value[0] == '/'){
-                                $value = substr($value, 1);
-                            }
-							$a->value = Request::baseUrl().$value;
+                }
+				if($a->name == 'src' || $a->name == 'href' || $a->name == 'action'){
+					$value = $a->value;
+					if(strpos($value, '://') === false && $value[0] != '?' && $value[0] != '#'){
+						if($value[0] == '/'){
+							$value = substr($value, 1);
 						}
+						$a->value = Request::baseUrl().$value;
 					}
 				}
+				
                 
             }
             
