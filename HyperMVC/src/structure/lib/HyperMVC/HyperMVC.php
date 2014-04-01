@@ -53,10 +53,6 @@ class HyperMVC {
      */
     protected $controller;
 
-    /**
-     * @var array
-     */
-    private $elementsToRemove = array();
     
     /**
      * @var string 
@@ -203,11 +199,7 @@ class HyperMVC {
         if (!$this->noExecute)
             $this->execute();
 
-        foreach ($this->elementsToRemove as $e) {
-            $e->parentNode->removeChild($e);
-        }
-
-		if(!is_null($this->contentTag)){
+        if(!is_null($this->contentTag)){
 			$this->output .= $this->domDocument->saveHTML();
 		}else{
 			$children = $this->domDocument->getElementsByTagName('body')->item(0)->childNodes;
@@ -408,7 +400,6 @@ class HyperMVC {
                 if (!$value) {
                     $this->remove = true;
 					$element->parentNode->removeChild($element);
-//                    $this->elementsToRemove[] = $element;
                 }
             } elseif ($attribute->name == self::DATA_H_COMPONENT) {
                 
@@ -472,7 +463,9 @@ class HyperMVC {
 		}
 		
         if($objectName){
-            $$objectName = $hmvcValueObject;
+            foreach ($objectName as $on){
+                $$on = $hmvcValueObject[$on];
+            }
         }
         $controllerObjName = $this->controller->getObjectName();
         
@@ -537,7 +530,7 @@ class HyperMVC {
 					$length = $root->childNodes->length;
 					$node = $root->childNodes->item($i);
 					
-					if ($node->nodeType == XML_TEXT_NODE){
+					if ($node->nodeType == XML_TEXT_NODE || $node->nodeType == XML_CDATA_SECTION_NODE){
                         if (preg_match_all('/#{[^#{}]+}/', $node->nodeValue, $matches)) {
 							
                             if (isset($matches[0])) {
@@ -591,7 +584,14 @@ class HyperMVC {
 					$item = $items[$j];
 					$i = clone $item;
 					$i->removeAttribute('removed');
-					$this->treatElements($i, $l, $itemNames[$j]);
+                    if(!is_null($obj)){
+                        $obj[$itemNames[$j]] = $l;
+                        $objName[$itemNames[$j]] = $itemNames[$j];
+                    }else{
+                        $obj = array($itemNames[$j] => $l);
+                        $objName = array($itemNames[$j] => $itemNames[$j]);
+                    }
+					$this->treatElements($i, $obj, $objName);
 					
 					if($last->parentNode === $item->parentNode){
 						$item->parentNode->insertBefore($i, $last);
