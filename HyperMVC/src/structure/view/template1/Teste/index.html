@@ -18,14 +18,14 @@
 
 
 <hr/>
-<h1>TEste teste teste teste
+<h1>TEste teste teste teste</h1>
 <hr/>
 
 <table data-h-source=" #{ $obj->getData( ) } ">
-	<tr data-h-item="item">
-		<td>#{$item->nome}</td>
+	<tr data-h-item="$key=>$item">
+		<td>#{$key} #{$item->nome}</td>
 		<td data-h-source="#{$item->getData()}">
-			<p data-h-item="item2">#{$item->nome} #{$item2->nome}</p>
+			<p data-h-item="k2=>item2">#{$item->nome} #{$key} #{$k2} #{$item2->nome}</p>
 		</td>
 	</tr>
 	<tr>

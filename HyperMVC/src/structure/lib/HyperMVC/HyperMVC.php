@@ -382,10 +382,10 @@ class HyperMVC {
         $this->treatElements($this->domDocument->documentElement);
     }
 
-    private function processValue($attribute, &$element, $attributeValue, $obj = null, $objName = null) {
+    private function processValue($attribute, &$element, $attributeValue, $obj = null, $objName = null, $key = null, $keyName = null) {
         $this->remove = false;
         if (!in_array($attribute->name, $this->attributes) || $attribute->name == self::DATA_H_CONTENT) {
-            $value = $this->getValue($attributeValue, $obj, $objName);
+            $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
             $pos = strpos($attribute->value, $attributeValue);
             $len = strlen($attributeValue);
             $val = substr($attribute->value, 0, $pos) . $value . substr($attribute->value, $pos + $len);
@@ -393,10 +393,10 @@ class HyperMVC {
         } else {
             if ($attribute->name == self::DATA_H_SOURCE) {
 				$element->removeAttribute(self::DATA_H_SOURCE);
-                $this->treatDataSource($element, $attribute, $obj, $objName);
+                $this->treatDataSource($element, $attribute, $obj, $objName, $key, $keyName);
                 
             } elseif ($attribute->name == self::DATA_H_RENDER) {
-                $value = $this->getValue($attributeValue, $obj, $objName);
+                $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
                 if (!$value) {
                     $this->remove = true;
 					$element->parentNode->removeChild($element);
@@ -420,25 +420,25 @@ class HyperMVC {
                 
                 $element->removeAttribute(self::DATA_H_COMPONENT);
             } elseif ($attribute->name == self::DATA_H_CHECKED) {
-                $value = $this->getValue($attributeValue, $obj, $objName);
+                $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
                 if ($value) {
                     $element->setAttribute('checked', 'checked');
                 }
                 $element->removeAttribute(self::DATA_H_CHECKED);
             } elseif ($attribute->name == self::DATA_H_DISABLED) {
-                $value = $this->getValue($attributeValue, $obj, $objName);
+                $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
                 if ($value) {
                     $element->setAttribute('disabled', 'disabled');
                 }
                 $element->removeAttribute(self::DATA_H_DISABLED);
             } elseif ($attribute->name == self::DATA_H_SELECTED) {
-                $value = $this->getValue($attributeValue, $obj, $objName);
+                $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
                 if ($value) {
                     $element->setAttribute('selected', 'selected');
                 }
                 $element->removeAttribute(self::DATA_H_SELECTED);
             } elseif ($attribute->name == self::DATA_H_REQUIRED) {
-                $value = $this->getValue($attributeValue, $obj, $objName);
+                $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
                 if ($value) {
                     $element->setAttribute('required', 'required');
                 }
@@ -448,34 +448,39 @@ class HyperMVC {
         return true;
     }
 
-    private function processNodeValue($element, $nodeValue, $obj = null, $objName = null) {
-        $value = $this->getValue($nodeValue, $obj, $objName);
+    private function processNodeValue($element, $nodeValue, $obj = null, $objName = null, $key = null, $keyName = null) {
+        $value = $this->getValue($nodeValue, $obj, $objName, $key, $keyName);
         $pos = strpos($element->nodeValue, $nodeValue);
         $len = strlen($nodeValue);
         $val = substr($element->nodeValue, 0, $pos) . $value . substr($element->nodeValue, $pos + $len);
         $element->nodeValue = $val;
     }
 
-    private function getValue($attributeValue, $hmvcValueObject = null, $objectName = null){
+    private function getValue($hmvcAttributeValue, $hmvcValueObject = null, $hmvcObjectName = null, $hmvcValueKey = null, $hmvcKeyName = null){
         
-		if(preg_match('/^#{(.+)}$/', trim($attributeValue), $matches)){
-			$attributeValue = trim($matches[1]);
+		if(preg_match('/^#{(.+)}$/', trim($hmvcAttributeValue), $matches)){
+			$hmvcAttributeValue = trim($matches[1]);
 		}
 		
-        if($objectName){
-            foreach ($objectName as $on){
+        if($hmvcObjectName){
+            foreach ($hmvcObjectName as $on){
                 $$on = $hmvcValueObject[$on];
+            }
+        }
+		if($hmvcKeyName){
+            foreach ($hmvcKeyName as $kn){
+                $$kn = $hmvcValueKey[$kn];
             }
         }
         $controllerObjName = $this->controller->getObjectName();
         
         $$controllerObjName = $this->controller;
         
-        return eval("return $attributeValue;");
+        return eval("return $hmvcAttributeValue;");
         
     }
     
-    protected function treatElements($root, $obj = null, $objName = null) {
+    protected function treatElements($root, $obj = null, $objName = null, $key = null, $keyName = null) {
 		if ($root instanceof \DOMElement && !$this->processed($root)) {
             
             $attributes = array();
@@ -490,7 +495,7 @@ class HyperMVC {
                     if (isset($matches[0])) {
                         foreach ($matches[0] as $attributeValue) {
 							if(!$this->remove){
-								if(!$this->processValue($a, $root, $attributeValue, $obj, $objName) || $root->hasAttribute('removed')){
+								if(!$this->processValue($a, $root, $attributeValue, $obj, $objName, $key, $keyName) || $root->hasAttribute('removed')){
                                     return;
                                 }
                                 if (in_array($a->name, $this->attributes)) {
@@ -535,12 +540,12 @@ class HyperMVC {
 							
                             if (isset($matches[0])) {
                                 foreach ($matches[0] as $nodeValue) {
-                                    $this->processNodeValue($node, $nodeValue, $obj, $objName);
+                                    $this->processNodeValue($node, $nodeValue, $obj, $objName, $key, $keyName);
                                 }
                             }
                         }
                     }
-					$this->treatElements($node, $obj, $objName);
+					$this->treatElements($node, $obj, $objName, $key, $keyName);
                 }
             }else{
                 $this->remove = false;
@@ -560,38 +565,50 @@ class HyperMVC {
 	}
 
 
-	protected function treatDataSource($element, $attribute, $obj = null, $objName = null) {
+	protected function treatDataSource($element, $attribute, $obj = null, $objName = null, $key = null, $keyName = null) {
         $list = $this->getValue($attribute->value, $obj, $objName);
 		
         $items = $this->getItemsDataSource($element);
 		
 		$itemNames = array();
+		$keyNames = array();
 		foreach ($items as $item){
             $name = $item->getAttribute(self::DATA_H_ITEM);
-            $name = preg_replace('/[^a-zA-Z0-9_]/', '', $name);
+			
+			$nameParts = explode('=>', $name);
+			
+			if(count($nameParts) > 1){
+				$name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[1]);
+				$kName = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
+			}else{
+				$name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
+				$kName = null;
+			}
+			
             if($name == $this->controller->getObjectName()){
                 throw new Exception("Item has the same name ($name) as controller! ");
             }
 			$item->setAttribute('removed', 'removed');
 			$itemNames[] = $name;
+			$keyNames[] = $kName;
 			$item->removeAttribute(self::DATA_H_ITEM);
 		}
 		if(count($items) > 0 && $list && count($list) > 0){
 			$last = $items[0];
-			foreach ($list as $l) {
+			foreach ($list as $k => $l) {
 				
 				for ($j = 0; $j < count($items); $j++){
 					$item = $items[$j];
 					$i = clone $item;
 					$i->removeAttribute('removed');
-                    if(!is_null($obj)){
-                        $obj[$itemNames[$j]] = $l;
-                        $objName[$itemNames[$j]] = $itemNames[$j];
-                    }else{
-                        $obj = array($itemNames[$j] => $l);
-                        $objName = array($itemNames[$j] => $itemNames[$j]);
-                    }
-					$this->treatElements($i, $obj, $objName);
+                    
+					$obj[$itemNames[$j]] = $l;
+					$objName[$itemNames[$j]] = $itemNames[$j];
+					
+                    $key[$keyNames[$j]] = $k;
+					$keyName[$keyNames[$j]] = $keyNames[$j];
+					
+					$this->treatElements($i, $obj, $objName, $key, $keyName);
 					
 					if($last->parentNode === $item->parentNode){
 						$item->parentNode->insertBefore($i, $last);
