@@ -485,8 +485,8 @@ class HyperMVC {
             
             $attributes = array();
             $length = $root->attributes->length;
-            for($i = 0; $i < $length; $i++) {
-                if($root->attributes->length < $length){
+			for($i = 0; $i < $length; $i++) {
+                if($root->attributes->length < $length || (isset($a) && !$root->hasAttribute($a->name))){
                     $i--;
                 }
                 $length = $root->attributes->length;
