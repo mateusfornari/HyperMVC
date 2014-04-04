@@ -389,7 +389,7 @@ class HyperMVC {
             $pos = strpos($attribute->value, $attributeValue);
             $len = strlen($attributeValue);
             $val = substr($attribute->value, 0, $pos) . $value . substr($attribute->value, $pos + $len);
-            $attribute->value = $val;
+            $attribute->value = htmlentities($val);
         } else {
             if ($attribute->name == self::DATA_H_SOURCE) {
 				$element->removeAttribute(self::DATA_H_SOURCE);
@@ -508,12 +508,14 @@ class HyperMVC {
                 }
 				if($a->name == 'src' || $a->name == 'href' || $a->name == 'action'){
 					$value = $a->value;
-					if(strpos($value, '://') === false && $value[0] != '?' && $value[0] != '#'){
-						if($value[0] == '/'){
-							$value = substr($value, 1);
-						}
-						$a->value = Request::baseUrl().$value;
-					}
+                    if($value != ''){
+                        if(strpos($value, '://') === false && $value[0] != '?' && $value[0] != '#'){
+                            if($value[0] == '/'){
+                                $value = substr($value, 1);
+                            }
+                            $a->value = Request::baseUrl().$value;
+                        }
+                    }
 				}
 				
                 

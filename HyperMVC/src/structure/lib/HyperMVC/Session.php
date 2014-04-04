@@ -4,9 +4,12 @@ class Session{
     
     private $data;
     
+    private $flashData = array();
+    
     private static $instance = null;
     
 	public static function start($sessionName = null) {
+        
 		if(is_null(self::$instance) && session_status() != PHP_SESSION_ACTIVE){
             self::$instance = new Session();
             if(is_null($sessionName)){
@@ -20,14 +23,24 @@ class Session{
             session_name($sessionName);
             if(session_start()){
                 self::$instance->data = $_SESSION;
+                if(self::$instance->data['hmvcFlashData']){
+                    self::$instance->flashData = self::$instance->data['hmvcFlashData'];
+                }
+                foreach (self::$instance->flashData as $key => $flash){
+                    if($flash['control'] >= 1){
+                        unset(self::$instance->flashData[$key]);
+                    }else{
+                        self::$instance->flashData[$key]['control']++;
+                    }
+                }
                 $_SESSION = array();
                 return true;
             }
             return false;
         }
+        
         return true;
 	}
-
 	
 	public static function renew() {
 		return session_regenerate_id(true);
@@ -44,11 +57,14 @@ class Session{
     public static function get($key){
         if(array_key_exists($key, self::$instance->data)){
             return self::$instance->data[$key];
+        }elseif(array_key_exists($key, self::$instance->flashData)){
+            return self::$instance->flashData[$key]['value'];
         }
         return null;
     }
     
     public static function commit(){
+        self::$instance->data['hmvcFlashData'] = self::$instance->flashData;
         $_SESSION = self::$instance->data;
         return session_write_close();
     }
@@ -65,6 +81,16 @@ class Session{
         return false;
     }
     
+    public static function setFlash($key, $value){
+        if(!is_null($key) && $key != ''){
+            self::$instance->flashData[$key]['value'] = $value;
+            self::$instance->flashData[$key]['control'] = 0;
+            return true;
+        }
+        return false;
+    }
+
+
     public static function flush(){
         self::$instance->data = array();
     }

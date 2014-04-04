@@ -53,6 +53,11 @@ class Request{
         exit();
     }
     
+    public static function reload(){
+        self::redirect(self::baseUrl() . HyperMVC::getRoute()->getQuery() . (self::queryString() ? '?' . self::queryString() : ''));
+    }
+
+
     public static function queryString(){
         $array = (array)self::$get;
         $data = array();
