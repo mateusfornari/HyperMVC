@@ -23,7 +23,7 @@ class Session{
             session_name($sessionName);
             if(session_start()){
                 self::$instance->data = $_SESSION;
-                if(self::$instance->data['hmvcFlashData']){
+                if(isset(self::$instance->data['hmvcFlashData'])){
                     self::$instance->flashData = self::$instance->data['hmvcFlashData'];
                 }
                 foreach (self::$instance->flashData as $key => $flash){
