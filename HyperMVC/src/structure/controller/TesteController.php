@@ -55,9 +55,7 @@ class TesteController extends BasicController{
 		
 	}
 
-	public function __toString() {
-        return $this->nome;
-    }
+	
     
     public function beforeAction() {
         echo __METHOD__;
@@ -72,7 +70,7 @@ class TesteController extends BasicController{
     }
     
     public function afterRender() {
-        echo __METHOD__;
+        parent::afterRender();
     }
 }
 

@@ -68,7 +68,9 @@ class HyperMVC {
 	
 	private $processed = array();
 
-
+    private $errors = array();
+    
+    
     /**
      *
      * @var HyperMVC
@@ -237,13 +239,13 @@ class HyperMVC {
             $templateFile = $this->includePath . 'view/' . ($this->viewRoot != '' ? $this->viewRoot . '/' : '') . $templateName . '.html';
             if (file_exists($templateFile)) {
                 $this->domDocument = new \DOMDocument();
-
+                
                 ob_start();
                 include $templateFile;
                 $templateString = ob_get_clean();
-
+                
                 @$this->domDocument->loadHTML($templateString);
-               
+                
             } else {
                 
                 $this->domDocument = null;
@@ -384,12 +386,16 @@ class HyperMVC {
 
     private function processValue($attribute, &$element, $attributeValue, $obj = null, $objName = null, $key = null, $keyName = null) {
         $this->remove = false;
-        if (!in_array($attribute->name, $this->attributes) || $attribute->name == self::DATA_H_CONTENT) {
+        if (!in_array($attribute->name, $this->attributes)) {
             $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
+            if(is_object($value) && !method_exists($value, '__toString')){
+                $this->errors[] = "Object of type '".get_class($value)."' could not be converted to string. Tag: '".$this->domDocument->saveHTML($element)."'. Instruction: $attributeValue.";
+                $value = '';
+            }
             $pos = strpos($attribute->value, $attributeValue);
             $len = strlen($attributeValue);
             $val = substr($attribute->value, 0, $pos) . $value . substr($attribute->value, $pos + $len);
-            $attribute->value = htmlentities($val);
+            $attribute->value = $val;
         } else {
             if ($attribute->name == self::DATA_H_SOURCE) {
 				$element->removeAttribute(self::DATA_H_SOURCE);
@@ -450,6 +456,10 @@ class HyperMVC {
 
     private function processNodeValue($element, $nodeValue, $obj = null, $objName = null, $key = null, $keyName = null) {
         $value = $this->getValue($nodeValue, $obj, $objName, $key, $keyName);
+        if(is_object($value) && !method_exists($value, '__toString')){
+            $this->errors[] = "Object of type '".get_class($value)."' could not be converted to string. Tag: '".$this->domDocument->saveHTML($element->parentNode)."'. Instruction: $nodeValue.";
+            $value = '';
+        }
         $pos = strpos($element->nodeValue, $nodeValue);
         $len = strlen($nodeValue);
         $val = substr($element->nodeValue, 0, $pos) . $value . substr($element->nodeValue, $pos + $len);
@@ -574,56 +584,62 @@ class HyperMVC {
 		
 		$itemNames = array();
 		$keyNames = array();
-		foreach ($items as $item){
-            $name = $item->getAttribute(self::DATA_H_ITEM);
-			
-			$nameParts = explode('=>', $name);
-			
-			if(count($nameParts) > 1){
-				$name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[1]);
-				$kName = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
-			}else{
-				$name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
-				$kName = null;
-			}
-			
-            if($name == $this->controller->getObjectName()){
-                throw new Exception("Item has the same name ($name) as controller! ");
+        if(count($items) > 0){
+            foreach ($items as $item){
+                $name = $item->getAttribute(self::DATA_H_ITEM);
+
+                $nameParts = explode('=>', $name);
+
+                if(count($nameParts) > 1){
+                    $name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[1]);
+                    $kName = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
+                }else{
+                    $name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
+                    $kName = null;
+                }
+
+                if($name == $this->controller->getObjectName()){
+                    throw new Exception("Item has the same name ($name) as controller! ");
+                }
+                $item->setAttribute('removed', 'removed');
+                $itemNames[] = $name;
+                $keyNames[] = $kName;
+                $item->removeAttribute(self::DATA_H_ITEM);
             }
-			$item->setAttribute('removed', 'removed');
-			$itemNames[] = $name;
-			$keyNames[] = $kName;
-			$item->removeAttribute(self::DATA_H_ITEM);
-		}
-		if(count($items) > 0 && $list && count($list) > 0){
-			$last = $items[0];
-			foreach ($list as $k => $l) {
-				
-				for ($j = 0; $j < count($items); $j++){
-					$item = $items[$j];
-					$i = clone $item;
-					$i->removeAttribute('removed');
-                    
-					$obj[$itemNames[$j]] = $l;
-					$objName[$itemNames[$j]] = $itemNames[$j];
-					
-                    $key[$keyNames[$j]] = $k;
-					$keyName[$keyNames[$j]] = $keyNames[$j];
-					
-					$this->treatElements($i, $obj, $objName, $key, $keyName);
-					
-					if($last->parentNode === $item->parentNode){
-						$item->parentNode->insertBefore($i, $last);
-					}else{
-						$item->parentNode->insertBefore($i, $item);
-						$last = $item;
-					}
-				}
-			}
-		}
-		foreach ($items as $item){
-			$item->parentNode->removeChild($item);
-		}
+            if(is_array($list) || $list instanceof Iterator){
+                $last = $items[0];
+                foreach ($list as $k => $l) {
+
+                    for ($j = 0; $j < count($items); $j++){
+                        $item = $items[$j];
+                        $i = clone $item;
+                        $i->removeAttribute('removed');
+
+                        $obj[$itemNames[$j]] = $l;
+                        $objName[$itemNames[$j]] = $itemNames[$j];
+
+                        $key[$keyNames[$j]] = $k;
+                        $keyName[$keyNames[$j]] = $keyNames[$j];
+
+                        $this->treatElements($i, $obj, $objName, $key, $keyName);
+
+                        if($last->parentNode === $item->parentNode){
+                            $item->parentNode->insertBefore($i, $last);
+                        }else{
+                            $item->parentNode->insertBefore($i, $item);
+                            $last = $item;
+                        }
+                    }
+                }
+            }else{
+                $this->errors[] = "Data source $attribute->value at tag '".$this->domDocument->saveHTML($element)."' is not an array.";
+            }
+            foreach ($items as $item){
+                $item->parentNode->removeChild($item);
+            }
+        }else{
+            $this->errors[] = "No items found for data source $attribute->value at tag '".$this->domDocument->saveHTML($element)."'.";
+        }
     }
 
     public static function setNoExecute($noExecute) {
@@ -634,6 +650,10 @@ class HyperMVC {
         self::$instance->viewRoot = $dirName;
     }
     
+    public static function errorInfo(){
+        return self::$instance->errors;
+    }
+
     /**
      * 
      * @param string $routeitemNames

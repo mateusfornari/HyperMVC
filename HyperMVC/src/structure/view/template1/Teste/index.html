@@ -7,11 +7,11 @@
 	<button data-h-disabled="#{$obj->mostraForm}" type="submit">Teste</button>
 </form>
 
-<p data-h-source="#{$obj->getData()}" data-h-item="item">#{$item->nome}</p>
+<p data-h-source="#{$obj->getData()}" data-h-item="item">#{$item}</p>
 
 
 <hr/>
-<p>TEste teste teste teste #{date('d/m/Y H:i:s')}</p>
+<p>TEste teste teste teste #{date('d/m/Y H:i:s')} #{new TesteController()}</p>
 <hr/>
 
 
@@ -25,12 +25,12 @@
 	<tr data-h-item="$key=>$item">
 		<td>#{$key} #{$item->nome}</td>
 		<td data-h-source="#{$item->getData()}">
-			<p data-h-item="k2=>item2">#{$item->nome} #{$key} #{$k2} #{$item2->nome}</p>
+			<p>#{$item->nome} #{$key} </p>
 		</td>
 	</tr>
 	<tr>
 		<td data-h-source="#{$obj->getData()}">
-			<p data-h-item="item2"><a href="dkjjkldgjldkf/#{$item2->nome}/#{$item2->apelido}/#{'#{jhfhjkdf}'}">#{$item2->nome}</a></p>
+			<p data-h-item="item2"><a href="dkjjkldgjldkf/#{$item2}/#{$item2->apelido}/#{'#{jhfhjkdf}'}">#{$item2->nome}</a></p>
 		</td>
 	</tr>
 </table>
