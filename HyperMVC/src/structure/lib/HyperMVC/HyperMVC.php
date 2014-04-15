@@ -493,6 +493,10 @@ class HyperMVC {
     protected function treatElements($root, $obj = null, $objName = null, $key = null, $keyName = null) {
 		if ($root instanceof \DOMElement && !$this->processed($root)) {
             
+			if($root->hasAttribute(self::DATA_H_RENDER)){
+				$this->processValue($root->getAttributeNode(self::DATA_H_RENDER), $root, $root->getAttribute(self::DATA_H_RENDER), $obj, $objName, $key, $keyName);
+			}
+			
             $attributes = array();
             $length = $root->attributes->length;
 			for($i = 0; $i < $length; $i++) {
