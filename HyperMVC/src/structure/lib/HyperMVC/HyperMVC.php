@@ -552,7 +552,7 @@ class HyperMVC {
 					$node = $root->childNodes->item($i);
 					
 					if ($node->nodeType == XML_TEXT_NODE || $node->nodeType == XML_CDATA_SECTION_NODE){
-                        if (preg_match_all('/#{[^#{}]+}/', $node->nodeValue, $matches)) {
+                        if (preg_match_all('/(#{[^#{}]+})|(#{[^#{}]*"[^"]+"[^#{}]*})|(#{[^#{}]*\'[^\']+\'[^#{}]*})/', $node->nodeValue, $matches)) {
 							
                             if (isset($matches[0])) {
                                 foreach ($matches[0] as $nodeValue) {
