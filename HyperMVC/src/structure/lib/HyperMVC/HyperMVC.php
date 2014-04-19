@@ -419,7 +419,8 @@ class HyperMVC {
             } elseif ($attribute->name == self::DATA_H_RENDER) {
                 $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
                 if (!$value) {
-					$element->parentNode->removeChild($element);
+                    if($element->parentNode)
+    					$element->parentNode->removeChild($element);
                     $element = null;
                     return false;
                 }
@@ -470,7 +471,7 @@ class HyperMVC {
         return true;
     }
 
-    private function processNodeValue($element, $nodeValue, $obj = null, $objName = null, $key = null, $keyName = null) {
+    private function processNodeValue(&$element, $nodeValue, $obj = null, $objName = null, $key = null, $keyName = null) {
         $value = $this->getValue($nodeValue, $obj, $objName, $key, $keyName);
         if(is_object($value) && !method_exists($value, '__toString')){
             $this->errors[] = "Object of type '".get_class($value)."' could not be converted to string. Tag: '".$this->domDocument->saveHTML($element->parentNode)."'. Instruction: $nodeValue.";
@@ -511,7 +512,7 @@ class HyperMVC {
         return $return;
     }
     
-    protected function treatElements($root, $obj = null, $objName = null, $key = null, $keyName = null) {
+    protected function treatElements(&$root, $obj = null, $objName = null, $key = null, $keyName = null) {
 		$this->visitedNodes++;
         
         if ($root instanceof \DOMElement) {
@@ -525,9 +526,10 @@ class HyperMVC {
                 }
             }
         }
+        
     }
     
-    private function treatAttributes($root, $obj = null, $objName = null, $key = null, $keyName = null){
+    private function treatAttributes(&$root, $obj = null, $objName = null, $key = null, $keyName = null){
         if($root->hasAttribute(self::DATA_H_RENDER)){
             if(!$this->processValue($root->getAttributeNode(self::DATA_H_RENDER), $root, $root->getAttribute(self::DATA_H_RENDER), $obj, $objName, $key, $keyName)){
                 return false;
@@ -564,7 +566,7 @@ class HyperMVC {
         return true;
     }
     
-    private function treatNode($node, $obj = null, $objName = null, $key = null, $keyName = null){
+    private function treatNode(&$node, $obj = null, $objName = null, $key = null, $keyName = null){
         if ($node->nodeType == XML_TEXT_NODE || $node->nodeType == XML_CDATA_SECTION_NODE){
             if (preg_match_all('/(#{[^#{}]+})|(#{[^#{}]*"[^"]+"[^#{}]*})|(#{[^#{}]*\'[^\']+\'[^#{}]*})/', $node->nodeValue, $matches)) {
                 if (isset($matches[0])) {
@@ -587,7 +589,7 @@ class HyperMVC {
      * @param type $keyName
      * @throws Exception
      */
-	protected function treatDataSource($element, $attribute, $obj = null, $objName = null, $key = null, $keyName = null) {
+	protected function treatDataSource(&$element, $attribute, $obj = null, $objName = null, $key = null, $keyName = null) {
         
         $list = $this->getValue($attribute->value, $obj, $objName);
             
@@ -597,14 +599,16 @@ class HyperMVC {
             $listSize = iterator_count($list);
         }else{
             $listSize = 0;
+            $this->errors[] = "Data source $attribute->value at tag '".$this->domDocument->saveHTML($element)."' is not an array.";
         }
 
+        $items = $this->getItemsDataSource($element);
+        
         if($listSize > 0){
             
             $itemNames = array();
             $keyNames = array();
             
-            $items = $this->getItemsDataSource($element);
             
             if(count($items) > 0){
                 
@@ -643,7 +647,8 @@ class HyperMVC {
                     $itemNames[] = $name;
                     $keyNames[] = $kName;
                     $item->removeAttribute(self::DATA_H_ITEM);
-                    $item->parentNode->removeChild($item);
+                    if($item->parentNode)
+                        $item->parentNode->removeChild($item);
                 }
                 
                 foreach ($list as $k => $l) {
@@ -660,7 +665,8 @@ class HyperMVC {
                         
                         $this->treatElements($clone, $obj, $objName, $key, $keyName);
                         
-                        $elementsToInsert[$elementsToInsert[$j]['index']]['elements'][] = $clone;
+                        if($clone)
+                            $elementsToInsert[$elementsToInsert[$j]['index']]['elements'][] = $clone;
                     }
                 }
                 
@@ -669,11 +675,18 @@ class HyperMVC {
                     return false;
                 }
             }else{
-                $this->errors[] = "Data source $attribute->value at tag '".$this->domDocument->saveHTML($element)."' is not an array.";
+                $this->errors[] = "No items found for data source $attribute->value at tag '".$this->domDocument->saveHTML($element)."'.";
             }
             
         }else{
-            $this->errors[] = "No items found for data source $attribute->value at tag '".$this->domDocument->saveHTML($element)."'.";
+            if(count($items) > 0){
+                foreach ($items as $item){
+                    if($item)
+                        $item->parentNode->removeChild($item);
+                }
+            }else{
+                $this->errors[] = "No items found for data source $attribute->value at tag '".$this->domDocument->saveHTML($element)."'.";
+            }
         }
         return true;
     }
