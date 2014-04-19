@@ -64,20 +64,20 @@ class HyperMVC {
      */
     protected $route = null;
     
-    private $remove = false;
 	
-	private $processed = array();
-
     private $errors = array();
     
+    private $visitedNodes = 0;
     
+    private $elementsToInsert = array();
+
+
     /**
      *
      * @var HyperMVC
      */
     private static $instance = null;
 
-    const DATA_H_CONTENT = 'data-h-content';
     const DATA_H_ITEM = 'data-h-item';
     const DATA_H_SOURCE = 'data-h-source';
     const DATA_H_RENDER = 'data-h-render';
@@ -88,7 +88,7 @@ class HyperMVC {
     const DATA_H_SELECTED = 'data-h-selected';
     const DATA_H_REQUIRED = 'data-h-required';
 
-    protected $attributes = array(self::DATA_H_CONTENT, self::DATA_H_ITEM, self::DATA_H_SOURCE, self::DATA_H_RENDER, self::DATA_H_VIEW, self::DATA_H_COMPONENT, self::DATA_H_CHECKED, self::DATA_H_DISABLED, self::DATA_H_SELECTED, self::DATA_H_REQUIRED);
+    protected $attributes = array(self::DATA_H_ITEM, self::DATA_H_SOURCE, self::DATA_H_RENDER, self::DATA_H_VIEW, self::DATA_H_COMPONENT, self::DATA_H_CHECKED, self::DATA_H_DISABLED, self::DATA_H_SELECTED, self::DATA_H_REQUIRED);
 
     private function __construct() {
         
@@ -190,7 +190,6 @@ class HyperMVC {
         
         $this->controller->afterAction();
         
-        $this->controller->beforeRender();
         $this->output .= ob_get_clean();
 
         
@@ -239,7 +238,7 @@ class HyperMVC {
             $templateFile = $this->includePath . 'view/' . ($this->viewRoot != '' ? $this->viewRoot . '/' : '') . $templateName . '.html';
             if (file_exists($templateFile)) {
                 $this->domDocument = new \DOMDocument();
-                
+                $this->domDocument->preserveWhiteSpace = false;
                 ob_start();
                 include $templateFile;
                 $templateString = ob_get_clean();
@@ -273,6 +272,7 @@ class HyperMVC {
             
             if (!is_null($this->domDocument) && !is_null($this->contentTag)) {
                 $this->viewElement = new \DOMDocument();
+                $this->viewElement->preserveWhiteSpace = false;
                 @$this->viewElement->loadHTML('<html><meta charset="UTF-8"><body>' . $viewString . '</body></html>');
                 $children = $this->viewElement->getElementsByTagName('body')->item(0)->childNodes;
 
@@ -284,6 +284,7 @@ class HyperMVC {
                 
             } else {
                 $this->domDocument = new \DOMDocument();
+                $this->domDocument->preserveWhiteSpace = false;
                 @$this->domDocument->loadHTML($viewString);
             }
         }
@@ -380,12 +381,26 @@ class HyperMVC {
     }
 	
     protected function execute() {
-
-        $this->treatElements($this->domDocument->documentElement);
+        $this->treatElements($this->domDocument->getElementsByTagName('html')->item(0));
+        
+        foreach ($this->elementsToInsert as $e){
+            foreach ($e as $d){
+                $pos = $d['pos'];
+                $parent = $d['parent'];
+                if(isset($d['elements'])){
+                    foreach ($d['elements'] as $element){
+                        if($pos){
+                            $parent->insertBefore($element, $pos);
+                        }else{
+                            $parent->appendChild($element);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private function processValue($attribute, &$element, $attributeValue, $obj = null, $objName = null, $key = null, $keyName = null) {
-        $this->remove = false;
         if (!in_array($attribute->name, $this->attributes)) {
             $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
             if(is_object($value) && !method_exists($value, '__toString')){
@@ -395,18 +410,20 @@ class HyperMVC {
             $pos = strpos($attribute->value, $attributeValue);
             $len = strlen($attributeValue);
             $val = substr($attribute->value, 0, $pos) . $value . substr($attribute->value, $pos + $len);
-            $attribute->value = $val;
+            @$attribute->value = $val;
         } else {
             if ($attribute->name == self::DATA_H_SOURCE) {
 				$element->removeAttribute(self::DATA_H_SOURCE);
-                $this->treatDataSource($element, $attribute, $obj, $objName, $key, $keyName);
+                return $this->treatDataSource($element, $attribute, $obj, $objName, $key, $keyName);
                 
             } elseif ($attribute->name == self::DATA_H_RENDER) {
                 $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
                 if (!$value) {
-                    $this->remove = true;
 					$element->parentNode->removeChild($element);
+                    $element = null;
+                    return false;
                 }
+                $element->removeAttribute(self::DATA_H_RENDER);
             } elseif ($attribute->name == self::DATA_H_COMPONENT) {
                 
                 $component = new HyperMVC();
@@ -423,7 +440,6 @@ class HyperMVC {
                     $c = self::$instance->domDocument->importNode($c, true);
                     $element->appendChild($c);
                 }
-                
                 $element->removeAttribute(self::DATA_H_COMPONENT);
             } elseif ($attribute->name == self::DATA_H_CHECKED) {
                 $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
@@ -486,164 +502,180 @@ class HyperMVC {
         
         $$controllerObjName = $this->controller;
         
-        return eval("return $hmvcAttributeValue;");
-        
+        ob_start();
+        $return = eval("return $hmvcAttributeValue;");
+        $error = ob_get_clean();
+        if($error != ''){
+            $this->errors[] = 'There is something wrong in this instruction '.$hmvcAttributeValue;
+        }
+        return $return;
     }
     
     protected function treatElements($root, $obj = null, $objName = null, $key = null, $keyName = null) {
-		if ($root instanceof \DOMElement && !$this->processed($root)) {
-            
-			if($root->hasAttribute(self::DATA_H_RENDER)){
-				$this->processValue($root->getAttributeNode(self::DATA_H_RENDER), $root, $root->getAttribute(self::DATA_H_RENDER), $obj, $objName, $key, $keyName);
-			}
+		$this->visitedNodes++;
+        
+        if ($root instanceof \DOMElement) {
 			
-            $attributes = array();
-            $length = $root->attributes->length;
-			for($i = 0; $i < $length; $i++) {
-                if($root->attributes->length < $length || (isset($a) && !$root->hasAttribute($a->name))){
-                    $i--;
-                }
-                $length = $root->attributes->length;
-                $a = $root->attributes->item($i);
-                if (preg_match_all('/(#{[^#{}]+})|(#{[^#{}]*"[^"]+"[^#{}]*})|(#{[^#{}]*\'[^\']+\'[^#{}]*})/', trim($a->value), $matches)) {
-                    if (isset($matches[0])) {
-                        foreach ($matches[0] as $attributeValue) {
-							if(!$this->remove){
-								if(!$this->processValue($a, $root, $attributeValue, $obj, $objName, $key, $keyName) || $root->hasAttribute('removed')){
-                                    return;
-                                }
-                                if (in_array($a->name, $this->attributes)) {
-									$attributes[] = $a->name;
-								}
+            if($this->treatAttributes($root, $obj, $objName, $key, $keyName)){
+                $childrenNodes = iterator_to_array($root->childNodes);
 
-							}
-                        }
-                    }
+                foreach ($childrenNodes as $node){
+                    $this->treatNode($node, $obj, $objName, $key, $keyName);
+                    $this->treatElements($node, $obj, $objName, $key, $keyName);
                 }
-				if($a->name == 'src' || $a->name == 'href' || $a->name == 'action'){
-					$value = $a->value;
-                    if($value != ''){
-                        if(strpos($value, '://') === false && $value[0] != '?' && $value[0] != '#'){
-                            if($value[0] == '/'){
-                                $value = substr($value, 1);
-                            }
-                            $a->value = Request::baseUrl().$value;
-                        }
-                    }
-				}
-				
-                
             }
-            
-            if(!$this->remove){
-                foreach ($attributes as $a) {
-                    if ($a == self::DATA_H_CONTENT) {
-                        $root->appendChild($this->domDocument->createTextNode($root->getAttribute($a)));
-                    }
-                    $root->removeAttribute($a);
-                }
-                
-				$length = $root->childNodes->length;
-                for($i = 0; $i < $length; $i++) {
-					if($root->childNodes->length < $length){
-						$i--;
-					}
-					$length = $root->childNodes->length;
-					$node = $root->childNodes->item($i);
-					
-					if ($node->nodeType == XML_TEXT_NODE || $node->nodeType == XML_CDATA_SECTION_NODE){
-                        if (preg_match_all('/(#{[^#{}]+})|(#{[^#{}]*"[^"]+"[^#{}]*})|(#{[^#{}]*\'[^\']+\'[^#{}]*})/', $node->nodeValue, $matches)) {
-							
-                            if (isset($matches[0])) {
-                                foreach ($matches[0] as $nodeValue) {
-                                    $this->processNodeValue($node, $nodeValue, $obj, $objName, $key, $keyName);
-                                }
-                            }
+        }
+    }
+    
+    private function treatAttributes($root, $obj = null, $objName = null, $key = null, $keyName = null){
+        if($root->hasAttribute(self::DATA_H_RENDER)){
+            if(!$this->processValue($root->getAttributeNode(self::DATA_H_RENDER), $root, $root->getAttribute(self::DATA_H_RENDER), $obj, $objName, $key, $keyName)){
+                return false;
+            }
+        }
+        $length = $root->attributes->length;
+        for($i = 0; $i < $length; $i++) {
+            if($root->attributes->length < $length || (isset($a) && !$root->hasAttribute($a->name))){
+                $i--;
+            }
+            $length = $root->attributes->length;
+            $a = $root->attributes->item($i);
+            if ($a && preg_match_all('/(#{[^#{}]+})|(#{[^#{}]*"[^"]+"[^#{}]*})|(#{[^#{}]*\'[^\']+\'[^#{}]*})/', trim($a->value), $matches)) {
+                if (isset($matches[0])) {
+                    foreach ($matches[0] as $attributeValue) {
+                        if(!$this->processValue($a, $root, $attributeValue, $obj, $objName, $key, $keyName)){
+                            return false;
                         }
                     }
-					$this->treatElements($node, $obj, $objName, $key, $keyName);
                 }
-            }else{
-                $this->remove = false;
             }
-            
-			$this->processed[] = $root;
+            if($a && ($a->name == 'src' || $a->name == 'href' || $a->name == 'action')){
+                $value = $a->value;
+                if($value != ''){
+                    if(strpos($value, '://') === false && $value[0] != '?' && $value[0] != '#'){
+                        if($value[0] == '/'){
+                            $value = substr($value, 1);
+                        }
+                        $a->value = Request::baseUrl().$value;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    
+    private function treatNode($node, $obj = null, $objName = null, $key = null, $keyName = null){
+        if ($node->nodeType == XML_TEXT_NODE || $node->nodeType == XML_CDATA_SECTION_NODE){
+            if (preg_match_all('/(#{[^#{}]+})|(#{[^#{}]*"[^"]+"[^#{}]*})|(#{[^#{}]*\'[^\']+\'[^#{}]*})/', $node->nodeValue, $matches)) {
+                if (isset($matches[0])) {
+                    foreach ($matches[0] as $nodeValue) {
+                        $this->processNodeValue($node, $nodeValue, $obj, $objName, $key, $keyName);
+                    }
+                }
+            }
         }
     }
 
-	private function processed($node){
-		foreach ($this->processed as $n){
-			if($n->isSameNode($node)){
-				return true;
-			}
-		}
-		return false;
-	}
 
-
+    /**
+     * 
+     * @param DomElement $element
+     * @param type $attribute
+     * @param type $obj
+     * @param type $objName
+     * @param type $key
+     * @param type $keyName
+     * @throws Exception
+     */
 	protected function treatDataSource($element, $attribute, $obj = null, $objName = null, $key = null, $keyName = null) {
+        
         $list = $this->getValue($attribute->value, $obj, $objName);
-		
-        $items = $this->getItemsDataSource($element);
-		
-		$itemNames = array();
-		$keyNames = array();
-        if(count($items) > 0){
-            foreach ($items as $item){
-                $name = $item->getAttribute(self::DATA_H_ITEM);
+            
+        if(is_array($list)){
+            $listSize = count($list);
+        }elseif($list instanceof Iterator){
+            $listSize = iterator_count($list);
+        }else{
+            $listSize = 0;
+        }
 
-                $nameParts = explode('=>', $name);
+        if($listSize > 0){
+            
+            $itemNames = array();
+            $keyNames = array();
+            
+            $items = $this->getItemsDataSource($element);
+            
+            if(count($items) > 0){
+                
+                $elementsToInsert[0]['index'] = 0;
+                $elementsToInsert[0]['pos'] = $items[0]->nextSibling;
+                $elementsToInsert[0]['parent'] = $items[0]->parentNode;
+                for($i = 0; $i < count($items); $i++){
+                    
+                    for($j = $i + 1; $j < count($items); $j++){
+                        if($items[$i]->parentNode->isSameNode($items[$j]->parentNode)){
+                            $elementsToInsert[$i]['pos'] = $items[$j]->nextSibling;
+                            $elementsToInsert[$j] = $elementsToInsert[$i];
+                        }else{
+                            $elementsToInsert[$j]['index'] = $j;
+                            $elementsToInsert[$j]['pos'] = $items[$j]->nextSibling;
+                            $elementsToInsert[$j]['parent'] = $items[$j]->parentNode;
+                        }
+                    }
+                    
+                    $item = $items[$i];
+                    
+                    $name = $item->getAttribute(self::DATA_H_ITEM);
 
-                if(count($nameParts) > 1){
-                    $name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[1]);
-                    $kName = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
-                }else{
-                    $name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
-                    $kName = null;
+                    $nameParts = explode('=>', $name);
+                    if(count($nameParts) > 1){
+                        $name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[1]);
+                        $kName = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
+                    }else{
+                        $name = preg_replace('/[^a-zA-Z0-9_]/', '', $nameParts[0]);
+                        $kName = null;
+                    }
+
+                    if($name == $this->controller->getObjectName()){
+                        throw new Exception("Item has the same name ($name) as controller! ");
+                    }
+                    $itemNames[] = $name;
+                    $keyNames[] = $kName;
+                    $item->removeAttribute(self::DATA_H_ITEM);
+                    $item->parentNode->removeChild($item);
                 }
-
-                if($name == $this->controller->getObjectName()){
-                    throw new Exception("Item has the same name ($name) as controller! ");
-                }
-                $item->setAttribute('removed', 'removed');
-                $itemNames[] = $name;
-                $keyNames[] = $kName;
-                $item->removeAttribute(self::DATA_H_ITEM);
-            }
-            if(is_array($list) || $list instanceof Iterator){
-                $last = $items[0];
+                
                 foreach ($list as $k => $l) {
 
                     for ($j = 0; $j < count($items); $j++){
-                        $item = $items[$j];
-                        $i = clone $item;
-                        $i->removeAttribute('removed');
-
+                        
+                        $clone = clone $items[$j];
+                        
                         $obj[$itemNames[$j]] = $l;
                         $objName[$itemNames[$j]] = $itemNames[$j];
 
                         $key[$keyNames[$j]] = $k;
                         $keyName[$keyNames[$j]] = $keyNames[$j];
-
-                        $this->treatElements($i, $obj, $objName, $key, $keyName);
-
-                        if($last->parentNode === $item->parentNode){
-                            $item->parentNode->insertBefore($i, $last);
-                        }else{
-                            $item->parentNode->insertBefore($i, $item);
-                            $last = $item;
-                        }
+                        
+                        $this->treatElements($clone, $obj, $objName, $key, $keyName);
+                        
+                        $elementsToInsert[$elementsToInsert[$j]['index']]['elements'][] = $clone;
                     }
+                }
+                
+                $this->elementsToInsert[] = $elementsToInsert;
+                if($items[0]->isSameNode($element)){
+                    return false;
                 }
             }else{
                 $this->errors[] = "Data source $attribute->value at tag '".$this->domDocument->saveHTML($element)."' is not an array.";
             }
-            foreach ($items as $item){
-                $item->parentNode->removeChild($item);
-            }
+            
         }else{
             $this->errors[] = "No items found for data source $attribute->value at tag '".$this->domDocument->saveHTML($element)."'.";
         }
+        return true;
     }
 
     public static function setNoExecute($noExecute) {
@@ -678,5 +710,7 @@ class HyperMVC {
         return self::$instance->route;
     }
     
-
+    public static function getVisitedNodes(){
+        return self::$instance->visitedNodes;
+    }
 }

@@ -8,8 +8,9 @@ class TesteController extends BasicController{
     
     public $lista = array();
 	
-	public function __construct($nome = 'Olá mundo!') {
+	public function __construct($nome = 'Olá mundo!', $apelido = '') {
 		$this->nome = $nome;
+        $this->apelido = $apelido;
         HyperMVC::setViewRoot('template1');
         $this->templateName = '../template';
 	}
@@ -23,7 +24,13 @@ class TesteController extends BasicController{
 	
 	public function getData(){
 //		return array();
-		return array(new TesteController('abc'), new TesteController('def'), new TesteController('ghi'));
+        
+        $data = array();
+        for($i = 0; $i < 500; $i++){
+            $data[] = new TesteController($i, $i);
+        }
+        return $data;
+//		return array(new TesteController('abc'), new TesteController('def'), new TesteController('ghi'));
 	}
 	
 	public function getDataArray(){
@@ -58,7 +65,7 @@ class TesteController extends BasicController{
 	
     
     public function beforeAction() {
-        echo __METHOD__;
+        parent::beforeAction();
     }
     
     public function beforeRender() {
@@ -71,6 +78,7 @@ class TesteController extends BasicController{
     
     public function afterRender() {
         parent::afterRender();
+        var_dump(HyperMVC::errorInfo());
     }
 }
 

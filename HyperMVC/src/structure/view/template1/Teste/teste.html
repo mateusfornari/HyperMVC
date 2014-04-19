@@ -1,11 +1,8 @@
-<table data-h-source="#{this->getData()}" data-h-item="item">
+<table data-h-source="#{$obj->getData()}">
 	<tr>
 		<th>Nome</th>
 	</tr>
-	<tr>
-		<td>#{item->nome}</td>
-	</tr>
-	<tr data-h-source="#{this->getData()}" data-h-item="item2">
-		<td>#{item2->nome}</td>
+	<tr data-h-item="$item">
+		<td>#{$item->nome}</td>
 	</tr>
 </table>
