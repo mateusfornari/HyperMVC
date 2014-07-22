@@ -1,12 +1,15 @@
 <script type="text/javascript">
 	alert('ok');
 </script>
+<div data-h-inflate="sc/garopaba/">
+
+</div>
 <hr/>
 <div>
 			
-	<input type="text" name="teste" data-h-disabled="#{this->mostrar}">
+	<input type="text" name="teste" data-h-disabled="#{$obj->mostrar}">
 
-	<table data-h-source="#{this->getLista()}" data-h-render="#{this->mostrar}">
+	<table data-h-source="#{$obj->getLista()}" data-h-render="#{$obj->mostrar}">
 		<tr>
 			<th>Nome</th>
 		</tr>
@@ -18,7 +21,5 @@
 	</table>
 
 </div>
-<div data-h-component="#{TesteComponent}">
 
-</div>
 	

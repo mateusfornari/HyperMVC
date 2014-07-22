@@ -2,12 +2,20 @@
 
 abstract class HyperMVCController {
 
-    protected $viewName = null;
+	/**
+	 * @var HyperMVC
+	 */
+	protected $instance;
+	protected $viewName = null;
     protected $templateName = 'template';
     private $objectName = 'obj';
     
-    
-    abstract public function indexAction();
+	public function setInstance(HyperMVC $instance) {
+		$this->instance = $instance;
+	}
+
+
+	abstract public function indexAction();
 
     public function getViewName() {
         return $this->viewName;

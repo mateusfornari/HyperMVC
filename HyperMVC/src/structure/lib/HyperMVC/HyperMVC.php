@@ -72,37 +72,27 @@ class HyperMVC {
     private $elementsToInsert = array();
 
 
-    /**
-     *
-     * @var HyperMVC
-     */
-    private static $instance = null;
-
     const DATA_H_ITEM = 'data-h-item';
     const DATA_H_SOURCE = 'data-h-source';
     const DATA_H_RENDER = 'data-h-render';
     const DATA_H_VIEW = 'data-h-view';
-    const DATA_H_COMPONENT = 'data-h-component';
     const DATA_H_CHECKED = 'data-h-checked';
     const DATA_H_DISABLED = 'data-h-disabled';
     const DATA_H_SELECTED = 'data-h-selected';
     const DATA_H_REQUIRED = 'data-h-required';
+    const DATA_H_INFLATE = 'data-h-inflate';
 
-    protected $attributes = array(self::DATA_H_ITEM, self::DATA_H_SOURCE, self::DATA_H_RENDER, self::DATA_H_VIEW, self::DATA_H_COMPONENT, self::DATA_H_CHECKED, self::DATA_H_DISABLED, self::DATA_H_SELECTED, self::DATA_H_REQUIRED);
+    protected $attributes = array(self::DATA_H_ITEM, self::DATA_H_SOURCE, self::DATA_H_RENDER, self::DATA_H_VIEW, self::DATA_H_CHECKED, self::DATA_H_DISABLED, self::DATA_H_SELECTED, self::DATA_H_REQUIRED, self::DATA_H_INFLATE);
 
-    private function __construct() {
-        
-    }
-
+    
     /**
      * 
      * @param boolean $printOutput 
      * @return string The result HTML.
      */
-    public static function render($printOutput = true){
-        self::$instance = new HyperMVC();
-		
-        self::$instance->process($printOutput);
+    public function render($printOutput = true){
+        
+        $this->process($printOutput);
     }
     
     /**
@@ -110,7 +100,7 @@ class HyperMVC {
      * @param boolean $printOutput 
      * @return string The result HTML.
      */
-    private function process($printOutput = true) {
+    private function process($printOutput = true, $query = null) {
         
         if (is_null($this->includePath)) {
             $this->includePath = str_replace('lib/HyperMVC', '', __DIR__);
@@ -119,8 +109,6 @@ class HyperMVC {
         if(isset($_GET['hmvcQuery'])){
             $query = $_GET['hmvcQuery'];
             unset($_GET['hmvcQuery']);
-        }else{
-            $query = null;
         }
         
         Request::init();
@@ -135,7 +123,6 @@ class HyperMVC {
             }
         }
         
-        
         if(is_null($this->controllerName)){
             $this->controllerName = isset($vars[':controller']) ? $vars[':controller'].'Controller' : 'DefaultController';
         }
@@ -147,6 +134,7 @@ class HyperMVC {
             require_once $basicControllerFile;
             require_once $controllerFile;
             $this->controller = new $this->controllerName;
+			$this->controller->setInstance($this);
             $this->output .= ob_get_clean();
         } else {
             return $this->notFoundPage($printOutput);
@@ -401,6 +389,7 @@ class HyperMVC {
     }
 
     private function processValue($attribute, &$element, $attributeValue, $obj = null, $objName = null, $key = null, $keyName = null) {
+		
         if (!in_array($attribute->name, $this->attributes)) {
             $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
             if(is_object($value) && !method_exists($value, '__toString')){
@@ -425,23 +414,6 @@ class HyperMVC {
                     return false;
                 }
                 $element->removeAttribute(self::DATA_H_RENDER);
-            } elseif ($attribute->name == self::DATA_H_COMPONENT) {
-                
-                $component = new HyperMVC();
-                $component->controllerName = preg_replace('/[#{}]/', '', $attribute->value);
-                $component->includePath = str_replace('lib/HyperMVC', '', __DIR__).'component/';
-                require_once $component->includePath.'controller/BasicComponent.php';
-                $result = $component->process(false);
-                $domComponent = new \DOMDocument();
-                $domComponent->loadHTML($result);
-                
-                $children = $domComponent->getElementsByTagName('body')->item(0)->childNodes;
-
-                foreach ($children as $c) {
-                    $c = self::$instance->domDocument->importNode($c, true);
-                    $element->appendChild($c);
-                }
-                $element->removeAttribute(self::DATA_H_COMPONENT);
             } elseif ($attribute->name == self::DATA_H_CHECKED) {
                 $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
                 if ($value) {
@@ -466,7 +438,21 @@ class HyperMVC {
                     $element->setAttribute('required', 'required');
                 }
                 $element->removeAttribute(self::DATA_H_REQUIRED);
-            }
+            } elseif ($attribute->name == self::DATA_H_INFLATE) {
+				$element->removeAttribute(self::DATA_H_INFLATE);
+				$h = new HyperMVC();
+				$inflate = $h->process(false, $attributeValue);
+				$d = new DOMDocument();
+				$d->loadHTML($inflate);
+				$item = $d->getElementsByTagName('body')->item(0);
+				if(!$item){
+					$item = $d;
+				}
+				foreach ($item->childNodes as $c) {
+					$c = $this->domDocument->importNode($c, true);
+					$element->appendChild($c);
+				}
+			}
         }
         return true;
     }
@@ -542,6 +528,7 @@ class HyperMVC {
             }
             $length = $root->attributes->length;
             $a = $root->attributes->item($i);
+			
             if ($a && preg_match_all('/(#{[^#{}]+})|(#{[^#{}]*"[^"]+"[^#{}]*})|(#{[^#{}]*\'[^\']+\'[^#{}]*})/', trim($a->value), $matches)) {
                 if (isset($matches[0])) {
                     foreach ($matches[0] as $attributeValue) {
@@ -550,7 +537,11 @@ class HyperMVC {
                         }
                     }
                 }
-            }
+            }else if($a && $a->name == self::DATA_H_INFLATE){
+				if(!$this->processValue($a, $root, $a->value, $obj, $objName, $key, $keyName)){
+					return false;
+				}
+			}
             if($a && ($a->name == 'src' || $a->name == 'href' || $a->name == 'action')){
                 $value = $a->value;
                 if($value != ''){
@@ -696,11 +687,11 @@ class HyperMVC {
     }
 
     public static function setViewRoot($dirName) {
-        self::$instance->viewRoot = $dirName;
+        $this->viewRoot = $dirName;
     }
     
     public static function errorInfo(){
-        return self::$instance->errors;
+        return $this->errors;
     }
 
     /**
@@ -719,11 +710,11 @@ class HyperMVC {
      * 
      * @return HyperMVCRoute
      */
-    public static function getRoute(){
-        return self::$instance->route;
+    public function getRoute(){
+        return $this->route;
     }
     
-    public static function getVisitedNodes(){
-        return self::$instance->visitedNodes;
+    public function getVisitedNodes(){
+        return $this->visitedNodes;
     }
 }

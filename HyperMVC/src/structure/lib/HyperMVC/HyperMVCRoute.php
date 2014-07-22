@@ -7,7 +7,7 @@ class HyperMVCRoute {
     private $vars = array();
     private $config = array();
 
-    function __construct($route, $query = '', $config = array()) {
+    public function __construct($route, $query = '', $config = array()) {
         if (substr($route, 0, 1) == '/') {
             $route = substr($route, 1);
         }
@@ -54,21 +54,20 @@ class HyperMVCRoute {
     }
 
     public function getVars() {
-        if (count($this->vars) == 0) {
-            $vars = explode('/', $this->route);
-            $values = explode('/', $this->query);
-            for ($i = 0; $i < count($vars); $i++) {
-                if (isset($values[$i]) && $values[$i] != '') {
-                    $varName = str_replace('?', '', $vars[$i]);
-                    if($varName == ':controller' || $varName == ':action'){
-                        $values[$i] = preg_replace('/[^a-zA-Z0-9_]/', '', $values[$i]);
-                    }
-                    $this->vars[$varName] = $values[$i];
-                } else {
-                    break;
-                }
-            }
-        }
+		$this->vars = array();
+		$vars = explode('/', $this->route);
+		$values = explode('/', $this->query);
+		for ($i = 0; $i < count($vars); $i++) {
+			if (isset($values[$i]) && $values[$i] != '') {
+				$varName = str_replace('?', '', $vars[$i]);
+				if($varName == ':controller' || $varName == ':action'){
+					$values[$i] = preg_replace('/[^a-zA-Z0-9_]/', '', $values[$i]);
+				}
+				$this->vars[$varName] = $values[$i];
+			} else {
+				break;
+			}
+		}
         return $this->vars;
     }
 
