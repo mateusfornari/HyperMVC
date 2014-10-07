@@ -1,0 +1,20 @@
+<div>
+			
+	<table data-h-source="#{$obj->myList}">
+		<tr>
+			<th>Number</th>
+			<th>Name</th>
+			<th>Action</th>
+		</tr>
+
+		<tr data-h-item="$key => $item">
+			<td>#{$key}</td>
+			<td>#{$item}</td>
+			<td><a href="#{$obj->baseUrl.$key}">View Details</a></td>
+		</tr>
+
+	</table>
+
+</div>
+
+	
