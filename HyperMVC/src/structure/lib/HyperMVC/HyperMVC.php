@@ -259,7 +259,7 @@ class HyperMVC {
             $viewString = ob_get_clean();
             
             if (!is_null($this->domDocument) && !is_null($this->contentTag)) {
-                $this->viewElement = new \DOMDocument();
+				$this->viewElement = new \DOMDocument();
                 $this->viewElement->preserveWhiteSpace = false;
                 @$this->viewElement->loadHTML('<html><meta charset="UTF-8"><body>' . $viewString . '</body></html>');
                 $children = $this->viewElement->getElementsByTagName('body')->item(0)->childNodes;
@@ -273,7 +273,7 @@ class HyperMVC {
             } else {
                 $this->domDocument = new \DOMDocument();
                 $this->domDocument->preserveWhiteSpace = false;
-                @$this->domDocument->loadHTML($viewString);
+				@$this->domDocument->loadHTML(mb_convert_encoding($viewString, 'HTML-ENTITIES', 'UTF-8'));
             }
         }
 		if (!is_null($this->contentTag)) {
@@ -399,7 +399,7 @@ class HyperMVC {
             $pos = strpos($attribute->value, $attributeValue);
             $len = strlen($attributeValue);
             $val = substr($attribute->value, 0, $pos) . $value . substr($attribute->value, $pos + $len);
-            @$attribute->value = $val;
+            @$attribute->value = htmlentities($val);
         } else {
             if ($attribute->name == self::DATA_H_SOURCE) {
 				$element->removeAttribute(self::DATA_H_SOURCE);
@@ -441,13 +441,12 @@ class HyperMVC {
             } elseif ($attribute->name == self::DATA_H_INFLATE) {
 				$element->removeAttribute(self::DATA_H_INFLATE);
 				$h = new HyperMVC();
-				$inflate = $h->process(false, $attributeValue);
+				$value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
+				
+				$inflate = $h->process(false, $value);
 				$d = new DOMDocument();
-				if (!is_null($h->domDocument) && !is_null($h->contentTag)) {
-					@$d->loadHTML('<html><meta charset="UTF-8"><body>' . $inflate . '</body></html>');
-				}else{
-					@$d->loadHTML($inflate);
-				}
+				@$d->loadHTML(utf8_decode($inflate));
+				
 				$item = $d->getElementsByTagName('body')->item(0);
 				if(!$item){
 					$item = $d;
@@ -553,7 +552,7 @@ class HyperMVC {
                         if($value[0] == '/'){
                             $value = substr($value, 1);
                         }
-                        $a->value = Request::baseUrl().$value;
+                        $a->value = Request::baseUrl().htmlentities($value);
                     }
                 }
             }
