@@ -443,7 +443,11 @@ class HyperMVC {
 				$h = new HyperMVC();
 				$inflate = $h->process(false, $attributeValue);
 				$d = new DOMDocument();
-				$d->loadHTML($inflate);
+				if (!is_null($h->domDocument) && !is_null($h->contentTag)) {
+					@$d->loadHTML('<html><meta charset="UTF-8"><body>' . $inflate . '</body></html>');
+				}else{
+					@$d->loadHTML($inflate);
+				}
 				$item = $d->getElementsByTagName('body')->item(0);
 				if(!$item){
 					$item = $d;
