@@ -15,7 +15,9 @@ class Request{
 	private static $hyperMVCObject;
     
     public static function init($hyperMVCObject) {
-		self::$hyperMVCObject = $hyperMVCObject;
+		if(!self::$hyperMVCObject){
+			self::$hyperMVCObject = $hyperMVCObject;
+		}
         if(isset($_GET)){
             self::$get = (object) $_GET;
             unset($_GET);

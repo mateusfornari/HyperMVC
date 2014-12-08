@@ -91,7 +91,7 @@ class HyperMVC {
      * @return string The result HTML.
      */
     public function render($printOutput = true){
-        Request::init($this);
+        
         $this->process($printOutput);
     }
     
@@ -111,6 +111,8 @@ class HyperMVC {
             unset($_GET['hmvcQuery']);
         }
         
+		Request::init($this);
+		
         $vars = null;
         foreach (self::$routes as $r) {
             $r->setQuery($query);
