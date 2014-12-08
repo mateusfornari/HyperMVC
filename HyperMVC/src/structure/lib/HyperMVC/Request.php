@@ -12,8 +12,10 @@ class Request{
     
     private static $baseUrl = null;
     
+	private static $hyperMVCObject;
     
-    public static function init() {
+    public static function init($hyperMVCObject) {
+		self::$hyperMVCObject = $hyperMVCObject;
         if(isset($_GET)){
             self::$get = (object) $_GET;
             unset($_GET);
@@ -54,7 +56,7 @@ class Request{
     }
     
     public static function reload(){
-        self::redirect(self::baseUrl() . HyperMVC::getRoute()->getQuery() . (self::queryString() ? '?' . self::queryString() : ''));
+        self::redirect(self::baseUrl() . self::$hyperMVCObject->getRoute()->getQuery() . (self::queryString() ? '?' . self::queryString() : ''));
     }
 
 

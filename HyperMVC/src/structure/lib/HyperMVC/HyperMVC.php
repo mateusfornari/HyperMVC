@@ -111,7 +111,7 @@ class HyperMVC {
             unset($_GET['hmvcQuery']);
         }
         
-        Request::init();
+        Request::init($this);
         
         $vars = null;
         foreach (self::$routes as $r) {
