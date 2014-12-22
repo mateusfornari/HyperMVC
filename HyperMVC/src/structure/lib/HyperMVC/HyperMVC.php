@@ -2,7 +2,7 @@
 
 class HyperMVC {
 
-	const VERSION = '0.1.53';
+	const VERSION = '0.1.54';
 	
     /**
      * @var string 
@@ -82,9 +82,10 @@ class HyperMVC {
     const DATA_H_DISABLED = 'data-h-disabled';
     const DATA_H_SELECTED = 'data-h-selected';
     const DATA_H_REQUIRED = 'data-h-required';
+    const DATA_H_READONLY = 'data-h-readonly';
     const DATA_H_INFLATE = 'data-h-inflate';
 
-    protected $attributes = array(self::DATA_H_ITEM, self::DATA_H_SOURCE, self::DATA_H_RENDER, self::DATA_H_VIEW, self::DATA_H_CHECKED, self::DATA_H_DISABLED, self::DATA_H_SELECTED, self::DATA_H_REQUIRED, self::DATA_H_INFLATE);
+    protected $attributes = array(self::DATA_H_ITEM, self::DATA_H_SOURCE, self::DATA_H_RENDER, self::DATA_H_VIEW, self::DATA_H_CHECKED, self::DATA_H_DISABLED, self::DATA_H_SELECTED, self::DATA_H_REQUIRED, self::DATA_H_INFLATE, self::DATA_H_READONLY);
 
     
     /**
@@ -440,6 +441,12 @@ class HyperMVC {
                     $element->setAttribute('required', 'required');
                 }
                 $element->removeAttribute(self::DATA_H_REQUIRED);
+            } elseif ($attribute->name == self::DATA_H_READONLY) {
+                $value = $this->getValue($attributeValue, $obj, $objName, $key, $keyName);
+                if ($value) {
+                    $element->setAttribute('readonly', 'readonly');
+                }
+                $element->removeAttribute(self::DATA_H_READONLY);
             } elseif ($attribute->name == self::DATA_H_INFLATE) {
 				$element->removeAttribute(self::DATA_H_INFLATE);
 				$h = new HyperMVC();
