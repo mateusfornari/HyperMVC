@@ -2,6 +2,8 @@
 
 class HyperMVC {
 
+	const VERSION = '0.1.53';
+	
     /**
      * @var string 
      */
