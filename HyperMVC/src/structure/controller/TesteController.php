@@ -14,7 +14,7 @@
 class TesteController extends BasicController {
 	
 	public function indexAction() {
-		$this->templateName = null;
+		//$this->templateName = null;
 		
 		if(isset(Request::$post->enviar)){
 			Request::reload();

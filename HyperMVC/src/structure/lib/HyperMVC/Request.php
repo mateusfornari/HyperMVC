@@ -19,7 +19,7 @@ class Request{
 			self::$hyperMVCObject = $hyperMVCObject;
 		}
         if(isset($_GET)){
-            self::$get = (object) $_GET;
+			self::$get = (object) $_GET;
             unset($_GET);
         }
         if(isset($_POST)){

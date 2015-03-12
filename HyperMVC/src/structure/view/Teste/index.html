@@ -1,5 +1,6 @@
 <p><a href="teste?a=1&b=2">José &nbsp; Batista</a></p>
 <form method="post">
-	<input type="text" value="#{'C&A'}" name="teste"/>
+	<input type="text" value="#{'C&A acentuação'}" name="teste"/>
 	<input type="submit" value="Enviar" name="enviar"/>
+	<a href="?m=#{Request::$get->m}&n=2" class="#{Request::queryString()}">Teste #{Request::$get->m}</a>
 </form>
