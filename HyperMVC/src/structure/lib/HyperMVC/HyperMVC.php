@@ -94,7 +94,7 @@ class HyperMVC {
      * @return string The result HTML.
      */
     public function render($printOutput = true){
-        
+        libxml_use_internal_errors(true);
         $this->process($printOutput);
     }
     
