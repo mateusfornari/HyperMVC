@@ -13,6 +13,8 @@
  */
 class TesteController extends BasicController {
 	
+    public $list = array(1,2,3,4,5);
+    
 	public function indexAction() {
 		//$this->templateName = null;
 		

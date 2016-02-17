@@ -2,7 +2,7 @@
 
 class HyperMVC {
 
-	const VERSION = '0.1.55';
+	const VERSION = '0.1.57';
 	
     /**
      * @var string 
@@ -94,7 +94,7 @@ class HyperMVC {
      * @return string The result HTML.
      */
     public function render($printOutput = true){
-        
+        libxml_use_internal_errors(true);
         $this->process($printOutput);
     }
     
@@ -401,7 +401,8 @@ class HyperMVC {
             }
             $pos = strpos($attribute->value, $attributeValue);
             $len = strlen($attributeValue);
-			$val = substr($attribute->value, 0, $pos) . $value . substr($attribute->value, $pos + $len);
+            
+            $val = substr($attribute->value, 0, $pos) . ($attribute->name != 'href' ? utf8_decode($value) : $value) . substr($attribute->value, $pos + $len);
             @$attribute->value = htmlentities($val);
         } else {
             if ($attribute->name == self::DATA_H_SOURCE) {

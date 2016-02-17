@@ -4,3 +4,9 @@
 	<input type="submit" value="Enviar" name="enviar"/>
 	<a href="?m=#{Request::$get->m}&n=2" class="#{Request::queryString()}">Teste #{Request::$get->m}</a>
 </form>
+
+<table data-h-source="#{$obj->list}">
+    <tr data-h-item="i">
+        <td id="teste_#{$i}">#{$i}</td>
+    </tr>
+</table>
