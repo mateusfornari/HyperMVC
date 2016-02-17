@@ -33,7 +33,7 @@ class Session{
                         self::$instance->flashData[$key]['control']++;
                     }
                 }
-                $_SESSION = array();
+                //$_SESSION = array();
                 return true;
             }
             return false;
