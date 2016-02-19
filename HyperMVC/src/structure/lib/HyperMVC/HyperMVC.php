@@ -372,7 +372,8 @@ class HyperMVC {
     }
 	
     protected function execute() {
-        $this->treatElements($this->domDocument->getElementsByTagName('html')->item(0));
+		$item = $this->domDocument->getElementsByTagName('html')->item(0);
+        $this->treatElements($item);
         
         foreach ($this->elementsToInsert as $e){
             foreach ($e as $d){
